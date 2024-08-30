@@ -1,75 +1,25 @@
-#include <conio.h>
 #include <ctype.h>
-#include <stdarg.h>
+#include <varargs.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <dos.h>
+#include <strings.h>
+#include "conio.h"
 
 /*
-  structures
+  Defines
 */
 
-struct Room
-{
-	char connect[6];
-	char *name;
-	char *descript;
-};
+/* Flag values */
 
-struct Living
-{
-	char room;
-	char strike;
-	char status;
-};
-
-struct Item
-{
-	char *name;
-	char *descript;
-	char room;
-	char useableon;
-};
-
-struct Status
-{
-	char paperpos;
-	char curroom;
-	char lifepoints;
-	bool lamp;
-	char lamppoints;
-};
-
-struct Progdata
-{
-	Room rooms[80];
-	Living living[21];
-	Item items[25];
-	char owneditems[10];
-	char paperroute[6];
-	Status status;
-};
-
-struct Parsedata
-{
-	char command;
-	char object1;
-	char object2;
-	bool error;
-};
-
-/*
-  defines
-*/
-
-#define NO_COMMAND	   -1
-#define NO_ROOM		   -1
-#define OWNED				-2
-#define NO_ITEM         -1
-#define AMBIGUOUS_ITEM  -2
-#define INFINITE_POINTS -1
+#define NO_COMMAND		-1
+#define NO_ROOM			-1
+#define OWNED			-2
+#define NO_ITEM			-1
+#define AMBIGUOUS_ITEM 	-2
+#define INFINITE_POINTS	-1
 #define NOTHING			-1
+
+/* Commands */
 
 #define EAST		0
 #define WEST		1
@@ -77,7 +27,7 @@ struct Parsedata
 #define SOUTH		3
 #define UP			4
 #define DOWN		5
-#define GEBRUIK	6
+#define GEBRUIK		6
 #define COMBINEER	7
 #define PAK			8
 #define LEG			9
@@ -87,6 +37,11 @@ struct Parsedata
 #define STATUS		13
 #define HELP		14
 
+#define ROOM_COUNT		80
+#define MAX_OWNED_ITEMS	10
+
+/* Living objects */
+
 #define HELLEHOND		0
 #define RODETROL		1
 #define PLANT			2
@@ -94,79 +49,137 @@ struct Parsedata
 #define DRAAK			4
 #define GEZWEL			5
 #define DEUR			6
-#define STEMMEN		7
+#define STEMMEN			7
 #define BARBECUE		8
 #define BOOM			9
-#define DIAMANT		10
+#define DIAMANT			10
 #define COMPUTER		11
 #define DRAKEKOP		12
 #define LAVA			13
 #define VACUUM			14
 #define PAPIER			15
-#define NOORDMOERAS	16
+#define NOORDMOERAS		16
 #define MIDDENMOERAS	17
-#define ZUIDMOERAS	18
+#define ZUIDMOERAS		18
 #define MISTGROT		19
 #define TELEPORT		20
+#define LIVING_COUNT	21
 
-#define HONDVLEES			0
-#define HITTEPAK			1
-#define GROENKRISTAL		2
-#define ZWAARD				3
-#define BOT					4
-#define DISKETTE			5
-#define HASJ				6
+/* Items */
+
+#define HONDVLEES		0
+#define HITTEPAK		1
+#define GROENKRISTAL	2
+#define ZWAARD			3
+#define BOT				4
+#define DISKETTE		5
+#define HASJ			6
 #define ROODKRISTAL		7
-#define SLAAPMUTS			8
-#define BOM					9
+#define SLAAPMUTS		8
+#define BOM				9
 #define ZAKLAMP			10
 #define VERBAND			11
 #define VLAMMENWERPER	12
-#define KOOKBOEK			13
-#define TNT					14
+#define KOOKBOEK		13
+#define TNT				14
 #define GASPATROON		15
 #define GIFTIGVLEES		16
 #define ONTSTEKING		17
 #define BATTERIJEN		18
-#define GASMASKER			19
+#define GASMASKER		19
 #define PAPIERITEM		20
-#define BOEKJE				21
-#define BLAUWKRISTAL		22
-#define KOEKJE				23
+#define BOEKJE			21
+#define BLAUWKRISTAL	22
+#define KOEKJE			23
 #define GASGRANAAT		24
+#define ITEM_COUNT		25
 
-#define ON_ITEM(item) (-(item + 2))
+#define ON_ITEM(item)	(-(item + 2))
 
-#define E_GRAVE "\x82"
-#define E_TREMA "\x89"
+/* Preloaded strings. 0 to 5 are taken by the directions of navigation. */
 
-// strinp.cpp
-int agetchar(const char *allowed);
-int ascanf(int chckinp, int length, const char *allowed, const char *frmstr, ...);
-int strinp (const char *allowed, char *input, int inpx, int inpy, int caps, int esc, int curm);
+#define YOU_CAN_GO_TO			6
+#define AND						7
+#define YOU_ARE_HERE			8
+#define TOO_DARK_TO_SEE			9
+#define ITEM_HERE				10
+#define ITEMS_HERE				11
+#define PRELOADED_STRING_COUNT	12
 
-// loadsave.cpp
-void SaveStatus(Progdata &progdata);
-bool LoadStatus(Progdata &progdata);
+/*
+  Structures
+*/
 
-// intro.cpp
-void RunIntro(void);
-void ShowSplashScreen(void);
-void ShowStartMessage(void);
+typedef struct
+{
+	char connect[6];
+} Room;
 
-// init.cpp
-bool Initialize(Progdata &progdata);
+typedef struct
+{
+	char room;
+	char strike;
+	char status;
+} Living;
 
-// use.cpp
-bool DoAction(Progdata &progdata);
+typedef struct
+{
+	char *name;
+	char room;
+	char useableon;
+} Item;
 
-// main.cpp
-void PrintCentered(const char *text, int offset = 0);
-void ForceExit(void);
+typedef struct
+{
+	char paperpos;
+	char curroom;
+	char lifepoints;
+	bool lamp;
+	char lamppoints;
+} Status;
 
-// status.cpp
-void RoomStatus(Progdata &progdata);
-bool BeastStatus(Progdata &progdata);
-void ApplySimmeringForest(Progdata &progdata);
+typedef struct
+{
+	Room rooms[ROOM_COUNT];
+	Living living[LIVING_COUNT];
+	Item items[ITEM_COUNT];
+	char owneditems[MAX_OWNED_ITEMS];
+	char paperroute[6];
+	Status status;
+	char *strings[PRELOADED_STRING_COUNT];
+} Progdata;
 
+typedef struct
+{
+	char command;
+	char object1;
+	char object2;
+	bool error;
+} Parsedata;
+
+#define rnd(x) (random() % (x))
+
+extern char *language;
+
+// strinp.c
+int agetchar();
+int ascanf();
+int strinp ();
+
+// init.c
+bool Initialize();
+
+// status.c
+void ApplySimmeringForest();
+
+// main.c
+void ForceExit();
+
+// files.c
+char *GetDataPath();
+void PrintLivingStatus();
+char *GetSingleLineText();
+void GetRoomText();
+int LoadStrings();
+void LoadItemName();
 

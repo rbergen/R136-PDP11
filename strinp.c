@@ -20,12 +20,12 @@
 /***************************************************************************
  * Includes necessary for functions to work
  ***************************************************************************/
-#include <conio.h>
 #include <ctype.h>
-#include <stdarg.h>
+#include <varargs.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "conio.h"
 
 /***************************************************************************
  * #defines of constants used by the functions
@@ -59,33 +59,6 @@
 #define L_INSFLAG  3
 
 /***************************************************************************
- * Declarations of the functions
- ***************************************************************************/
-int agetchar(const char *allowed);
-int ascanf(int chckinp, int length, const char *allowed, const char *frmstr, ...);
-int strinp (const char *allowed, char *input, int inpx, int inpy, int caps, int esc, int curm);
-
-/*-------------------------------------------------------------------------*
- * Remarks: 1. to create a header file for the  functions, the code shown
- *             until so far has to be used for that purpose.
- *          2. the routines use functions that can write to screen via either
- *             BIOS routines or direct video memory access.
- *             To use the BIOS routines (slower but valid for any MS-DOS
- *             computer and default), include this code in your source file:
- *             directvideo = 0;
- *             To use the memory routines (faster but unusable for some
- *             computers), include this code in your source file:
- *             directvideo = 1;
- *-------------------------------------------------------------------------*/
-
-/* Turn warning for 'Condition is always true' off (Borland) */
-#pragma warn -ccc
-/* Turn warning for 'Possibly incorrect assignment' off (Borland) */
-#pragma warn -pia
-/* Turn warning for 'Unreachable code' off (Borland) */
-#pragma warn -rch
-
-/***************************************************************************
  * Definitions of the functions
  ***************************************************************************/
 
@@ -104,11 +77,13 @@ int strinp (const char *allowed, char *input, int inpx, int inpy, int caps, int 
  *
  * example: y_or_n = agetchar("yYnN");
  *=========================================================================*/
-int agetchar(const char *allowed)
-{  char input;
+int agetchar(allowed)
+char *allowed;
+{
+	char input;
 
-	do
-	{  if (ascanf(0, 1, allowed, "%c", &input) == L_ESC)
+	do {
+		if (ascanf(0, 1, allowed, "%c", &input) == L_ESC)
 			input = L_ESC;
 	}
 	while (input == ' ');
@@ -145,16 +120,20 @@ int agetchar(const char *allowed)
  *
  * example: ascanf(1, 25, "1234567890.", "%d %f", &intvar, &floatvar);
  *=========================================================================*/
-int ascanf(int chckinp, int length, const char *allowed, const char *frmstr, ...)
-{  va_list argp;
+int ascanf(chckinp, length, allowed, frmstr, va_alist)
+int chckinp, length;
+char *allowed, *frmstr;
+va_dcl
+{
+	va_list argp;
 	char *inpstr;
 	int toret;
 
 	inpstr = (char *) calloc(length + 1, sizeof(char));
-	do
-	{  memset(inpstr, ' ', length);
-		if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC))
-		{  va_start(argp, frmstr);
+	do {
+		memset(inpstr, ' ', length);
+		if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC)) {
+			va_start(argp);
 			toret = vsscanf(inpstr, frmstr, argp);
 			va_end(argp);
 		}
@@ -162,6 +141,35 @@ int ascanf(int chckinp, int length, const char *allowed, const char *frmstr, ...
 	while (chckinp && (toret == EOF || !toret));
 	free(inpstr);
 	return toret;
+}
+
+/* In 2.11BSD K&R C on the PDP-11, vsscanf() is missing. This version is implemented exactly the
+   way I think it would have been based on the implementation of scanf, fscanf and sscanf in stdio.
+   There are some interesting K&R C peculiarities in this:
+   - In K&R C there is no explicit support for variadic arguments (i.e. the ... notation). Instead,
+     the first variadic argument is a named argument, and other arguments are accessed using
+	 pointer arithmetic on that argument's address.
+   - The type of the args argument is not declared, which means it's assumed to be int as per K&R C
+     specifications. In fact, all arguments after the format string should be pointers to variables
+     to fill with values extracted from str.
+   - As is the case in the stdio-supplied sscanf, the actual work is done by a library-internal
+     _doscan() function, which accepts a pointer to the first variadic argument of the calling
+     function, to be able to do the pointer arithmetic mentioned under the first point. Also, its
+     first argument is pointer to a FILE structure, in which the string to read from is loaded.
+*/
+int vsscanf(str, fmt, args)
+char *str, *fmt;
+va_list args;
+{
+	FILE _strbuf;
+
+	_strbuf._flag = _IOREAD|_IOSTRG;
+	_strbuf._ptr = _strbuf._base = str;
+	_strbuf._cnt = 0;
+	while (*inpstr++)
+		_strbuf._cnt++;
+	_strbuf._bufsiz = _strbuf._cnt;
+	return _doscan(&_strbuf, fmt,  args);
 }
 
 /*=========================================================================*
@@ -210,119 +218,127 @@ int ascanf(int chckinp, int length, const char *allowed, const char *frmstr, ...
  *
  * example: whyreturn = strinp("1234567890.", myinp, 10, 12, 0, 1, 1);
  *=========================================================================*/
-int strinp (const char *allowed, char *input, int inpx, int inpy, int caps, int esc, int curm)
-{  int ins, ilen, ipos = 0, toret = 0, curx, cury;
+int strinp (allowed, input, inpx, inpy, caps, esc, curm)
+char *allowed, *input;
+int inpx, inpy, caps, esc, curm;
+{
+	int ins = 1, ilen, ipos = 0, toret = 0, curx, cury;
 	char ichar;
 
 	ilen = strlen(input) - 1;
 	curx = wherex();
 	cury = wherey();
+
 	gotoxy(inpx, inpy);
-	if (L_INPSTART)
-	{  textcolor(LIGHTGRAY);
-   	putch(L_INPSTART);
+
+	if (L_INPSTART) {
+	   	putch(L_INPSTART);
 		inpx++;
 	}
-   textcolor(WHITE);
 	cputs(input);
 	if (L_INPEND)
-	{  textcolor(LIGHTGRAY);
-   	putch(L_INPEND);
-      textcolor(WHITE);
-   }
+		putch(L_INPEND);
 
-	if ((ins = L_INSFLAG & 1) && L_INSFLAG & 2 || !ins && !(L_INSFLAG & 2))
-		_setcursortype(_NORMALCURSOR);
-	else
-		_setcursortype(_SOLIDCURSOR);
-	do
-	{  gotoxy(inpx + ipos, inpy);
-		switch (ichar = getch())
-		{  case 0:
-				switch (getch())
-				{  case 75: /* Arrow left */
-						if (ipos)
-							ipos--;
-					break;
-					case 77: /* Arrow right */
-						if (ipos < ilen)
-							ipos++;
-					break;
-					case 71: /* Home */
-						ipos = 0;
-					break;
-					case 79: /* End */
-						ipos = ilen;
-						if (input[ipos] == ' ')
-							while (ipos && input[ipos - 1] == ' ')
-								ipos--;
-					break;
-					case 82: /* Insert */
-						ins = ins ? 0 : 1;
-						if (ins && L_INSFLAG & 2 || !ins && !(L_INSFLAG & 2))
-							_setcursortype(_NORMALCURSOR);
-						else
-							_setcursortype(_SOLIDCURSOR);
-					break;
-					case 83: /* Delete */
-						memmove(input + ipos, input + ipos + 1, ilen - ipos);
-						input[ilen] = ' ';
-						cputs(input + ipos);
-					break;
-					case 72: /* Arrow up */
-						if (curm)
-							toret = L_UP;
-					break;
-					case 80: /* Arrow down */
-						if (curm)
-							toret = L_DOWN;
-					break;
-					case 15: /* Shift-Tab */
-						if (curm)
-							toret = L_STAB;
-					break;
-				}
-			break;
-			case 8: /* Backspace */
+	do {
+		gotoxy(inpx + ipos, inpy);
+		switch (ichar = getch()) {
+		case 0:
+			switch (getch()) {
+			case 75: /* Arrow left */
 				if (ipos)
-				{  memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
-					input[ilen] = ' ';
-					gotoxy(inpx + --ipos, inpy);
-					cputs(input + ipos);
-				}
-			break;
-			case 9: /* Tab */
+					ipos--;
+				break;
+
+			case 77: /* Arrow right */
+				if (ipos < ilen)
+					ipos++;
+				break;
+
+			case 71: /* Home */
+				ipos = 0;
+				break;
+
+			case 79: /* End */
+				ipos = ilen;
+				if (input[ipos] == ' ')
+					while (ipos && input[ipos - 1] == ' ')
+						ipos--;
+				break;
+
+			case 82: /* Insert */
+				ins = ins ? 0 : 1;
+				break;
+
+			case 83: /* Delete */
+				memmove(input + ipos, input + ipos + 1, ilen - ipos);
+				input[ilen] = ' ';
+				cputs(input + ipos);
+				break;
+
+			case 72: /* Arrow up */
 				if (curm)
-					toret = L_TAB;
+					toret = L_UP;
+				break;
+
+			case 80: /* Arrow down */
+				if (curm)
+					toret = L_DOWN;
+				break;
+
+			case 15: /* Shift-Tab */
+				if (curm)
+					toret = L_STAB;
+				break;
+			}
 			break;
-			case 13: /* Enter */
-				toret = L_ENTER;
+
+		case 8: /* Backspace */
+			if (ipos)
+			{  memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
+				input[ilen] = ' ';
+				gotoxy(inpx + --ipos, inpy);
+				cputs(input + ipos);
+			}
 			break;
-			case 27: /* Escape */
-				if (esc)
-					toret = L_ESC;
+
+		case 9: /* Tab */
+			if (curm)
+				toret = L_TAB;
 			break;
-			default:
-				if (caps > 0)
-					ichar = toupper(ichar);
-				else if (caps < 0)
-					ichar = tolower(ichar);
-				if (strchr(allowed, ichar))
-				{  putch(ichar);
-					if (ins)
-					{  memmove(input + ipos + 1, input + ipos, ilen - ipos);
-						cputs(input + ipos + 1);
-					}
-					input[ipos] = ichar;
-					if (ipos < ilen)
-						ipos++;
+
+		case 13: /* Enter */
+			toret = L_ENTER;
+			break;
+
+		case 27: /* Escape */
+			if (esc)
+				toret = L_ESC;
+			break;
+
+		default:
+			if (caps > 0)
+				ichar = toupper(ichar);
+			else if (caps < 0)
+				ichar = tolower(ichar);
+
+			if (strchr(allowed, ichar)) {
+				putch(ichar);
+
+				if (ins) {
+					memmove(input + ipos + 1, input + ipos, ilen - ipos);
+					cputs(input + ipos + 1);
 				}
+
+				input[ipos] = ichar;
+
+				if (ipos < ilen)
+					ipos++;
+			}
 			break;
 		}
 	}
 	while (!toret);
-	_setcursortype(_NORMALCURSOR);
+
 	gotoxy(curx, cury);
-   textcolor(LIGHTGRAY);
 	return toret;
 }

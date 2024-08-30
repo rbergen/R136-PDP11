@@ -34,7 +34,7 @@ const char *cmds[15] = {
    CMD_HELP
 };
 
-#define THERES_NO_USE  			 "Dat heeft geen zin.\r\n\r\n"
+#define THERES_NO_USE  			 "Dat heeft geen zin.\n\n"
 
 bool DoGebruik(Progdata &progdata, Parsedata &parsedata);
 void UseItemToStatus(Progdata &progdata, int item, int ownedindex, int beast, int status);
@@ -57,10 +57,10 @@ bool DoAction(Progdata &progdata)
 
 	if (progdata.status.lifepoints <= 0)
 	{
-		cputs("Badend in je eigen bloed bezwijk je aan je verwondingen. Terwijl je liggend op\r\n"
-      		"de grond met moeite naar adem snakt, hoor je in de verte een luid gelach.\r\n"
-				"Dan zakken je ogen dicht en stopt je hart met kloppen.\r\n"
-				"Op hetzelfde moment ontploft de bom en sterft de aarde met jou.\r\n\r\n");
+		cputs("Badend in je eigen bloed bezwijk je aan je verwondingen. Terwijl je liggend op\n"
+      		"de grond met moeite naar adem snakt, hoor je in de verte een luid gelach.\n"
+				"Dan zakken je ogen dicht en stopt je hart met kloppen.\n"
+				"Op hetzelfde moment ontploft de bom en sterft de aarde met jou.\n\n");
 		ForceExit();
 	}
 
@@ -69,10 +69,10 @@ bool DoAction(Progdata &progdata)
 		switch(--progdata.status.lamppoints)
 		{
 		case 10:
-			cputs("De zaklamp gaat zwakker branden.\r\n\r\n");
+			cputs("De zaklamp gaat zwakker branden.\n\n");
 			break;
 		case 0:
-			cputs("De batterijen van de zaklamp zijn uitgeput. Langzaam dooft hij.\r\n\r\n");
+			cputs("De batterijen van de zaklamp zijn uitgeput. Langzaam dooft hij.\n\n");
 			progdata.status.lamp = false;
 			break;
 		}
@@ -88,14 +88,14 @@ bool DoAction(Progdata &progdata)
 		{
 			gotoxy(1, cury);
          textcolor(YELLOW);
-			cprintf("> ");
+			sputs("> ");
 			strinp(" abcdefghijklmnopqrstuvwxyz", inpstr, wherex(), wherey(), -1, 0, 0);
 			gotoxy(1, cury);
 			ParseInput(progdata, inpstr, parsedata);
 		}
 		while (parsedata.error);
 
-		cputs("\r\n\r\n");
+		cputs("\n\n");
 
 		switch(parsedata.command)
 		{
@@ -108,7 +108,7 @@ bool DoAction(Progdata &progdata)
 			if (progdata.rooms[progdata.status.curroom].connect[parsedata.command] != NO_ROOM)
 			{
 				if (progdata.living[GNOE].room == progdata.status.curroom && progdata.living[GNOE].status != 3)
-					switch(random(5))
+					switch(rnd(5))
 					{
 					case 0:
 						progdata.living[GNOE].room = 44;
@@ -139,7 +139,7 @@ bool DoAction(Progdata &progdata)
 				return true;
 			}
 			else
-				cputs("Daar kun je niet heen.\r\n");
+				cputs("Daar kun je niet heen.\n");
 			break;
 		case GEBRUIK:
 			return DoGebruik(progdata, parsedata);
@@ -164,7 +164,7 @@ bool DoAction(Progdata &progdata)
 
 			if (tolower(agetchar("jJnN")) == 'j')
 				return false;
-			cputs("\r\nMooi zo!\r\n");
+			cputs("\nMooi zo!\n");
 			break;
 		case STATUS:
 			DoStatus(progdata);
@@ -174,7 +174,7 @@ bool DoAction(Progdata &progdata)
 			break;
 		}
 
-		cputs("\r\n");
+		cputs("\n");
 	}
 	while (parsedata.command == STATUS || parsedata.command == HELP || parsedata.command == EINDE);
 
@@ -194,35 +194,35 @@ bool DoGebruik(Progdata &progdata, Parsedata &parsedata)
 			i = PLANT;
 			if (progdata.living[i].room != progdata.status.curroom || !progdata.living[i].strike)
 			{
-				cprintf(THERES_NO_USE);
+				cputs(THERES_NO_USE);
 				return true;
 			}
 		}
 		while (true)
 		{
 			cputs("Je haalt uit met je zwaard");
-			if (random(100) > 70)
-				cputs(", maar het monster ontwijkt.\r\n");
+			if (rnd(100) > 70)
+				cputs(", maar het monster ontwijkt.\n");
 			else
 			{
-				cputs(" en je raakt het monster hard.\r\n");
+				cputs(" en je raakt het monster hard.\n");
 				progdata.living[i].strike--;
 			}
 			if (progdata.living[i].strike == 1)
-				cputs("\r\nHet monster is zwaar gewond en je baadt in zijn bloed.\r\n");
-			if (!progdata.living[i].strike || random(100) > 30)
+				cputs("\nHet monster is zwaar gewond en je baadt in zijn bloed.\n");
+			if (!progdata.living[i].strike || rnd(100) > 30)
 				break;
-			cputs("\r\nJe kunt nog een slag uitdelen. ");
+			cputs("\nJe kunt nog een slag uitdelen. ");
          textcolor(YELLOW);
          cputs("Wil je dat? ");
 			if (tolower(agetchar("jJnN")) != 'j')
 			{
-				cputs("\r\n");
+				cputs("\n");
 				break;
 			}
-			cputs("\r\n");
+			cputs("\n");
 		}
-		cputs("\r\n");
+		cputs("\n");
 		if (!progdata.living[i].strike)
 		{
 			progdata.living[i].status = 3;
@@ -234,49 +234,49 @@ bool DoGebruik(Progdata &progdata, Parsedata &parsedata)
 		if (progdata.status.lamp)
 		{
 			progdata.status.lamp = !progdata.status.lamp;
-			cprintf("Je zet de zaklamp uit.%s", ((progdata.status.curroom != 61 && progdata.status.curroom != 31 && progdata.status.curroom >= 20) ? " Je ziet niets meer.\r\n" : "\r\n"));
+			wprintw(mainscr, "Je zet de zaklamp uit.%s", ((progdata.status.curroom != 61 && progdata.status.curroom != 31 && progdata.status.curroom >= 20) ? " Je ziet niets meer.\n" : "\n"));
 			break;
 		}
 		if (progdata.status.lamppoints)
 		{
 			progdata.status.lamp = !progdata.status.lamp;
-			cputs("Je zet de zaklamp aan. De straal verlicht de omtrek.\r\n");
+			cputs("Je zet de zaklamp aan. De straal verlicht de omtrek.\n");
 		}
 		else
-			cputs("Zonder nieuwe batterijen doet-ie het niet...\r\n");
+			cputs("Zonder nieuwe batterijen doet-ie het niet...\n");
 		break;
 	case VERBAND:
 		if (progdata.status.lifepoints == 20)
 		{
-			cputs("Je bent nog helemaal heel!\r\n");
+			cputs("Je bent nog helemaal heel!\n");
 			break;
 		}
-		cputs("Je pakt het verband en de pleisters en plaatst ze over je wonden. Je bijt even\r\n"
-      		"op je lippen van de pijn als het verband je nog bloedende wonden raakt.\r\n\r\n"
-				"Je bent weer zo goed als nieuw.\r\n");
+		cputs("Je pakt het verband en de pleisters en plaatst ze over je wonden. Je bijt even\n"
+      		"op je lippen van de pijn als het verband je nog bloedende wonden raakt.\n\n"
+				"Je bent weer zo goed als nieuw.\n");
 		progdata.status.lifepoints = 20;
 		progdata.items[VERBAND].room = NO_ROOM;
 		progdata.owneditems[parsedata.object1] = NO_ITEM;
 		getch();
 		break;
 	case TNT:
-		cputs("Je pakt een staafje en gooit het op de grond. Er volgt een explosie die samen-\r\n"
-			   "gaat met een harde knal. Je wordt even verblind door de flits van de ontplof-\r\n"
-			   "fing. Door de klap val je even flauw.\r\n");
+		cputs("Je pakt een staafje en gooit het op de grond. Er volgt een explosie die samen-\n"
+			   "gaat met een harde knal. Je wordt even verblind door de flits van de ontplof-\n"
+			   "fing. Door de klap val je even flauw.\n");
 		progdata.status.lifepoints--;
 		getch();
 		break;
 	case HITTEPAK:
-		cputs("Je hebt het pak al aan.\r\n");
+		cputs("Je hebt het pak al aan.\n");
 		break;
 	case GASMASKER:
-		cputs("Je hebt het gasmasker al op.\r\n");
+		cputs("Je hebt het gasmasker al op.\n");
 		break;
 	default:
 		if (progdata.items[progdata.owneditems[parsedata.object1]].useableon < 0
 			 || progdata.living[progdata.items[progdata.owneditems[parsedata.object1]].useableon].room != progdata.status.curroom)
 		{
-			cprintf(THERES_NO_USE);
+			cputs(THERES_NO_USE);
 			return true;
 		}
 		switch (progdata.owneditems[parsedata.object1])
@@ -304,7 +304,7 @@ bool DoGebruik(Progdata &progdata, Parsedata &parsedata)
 		case SLAAPMUTS:
 			if (progdata.living[DRAAK].status != 4)
 			{
-				cprintf(THERES_NO_USE);
+				cputs(THERES_NO_USE);
 				return true;
 			}
 			UseItemToStatus(progdata, SLAAPMUTS, parsedata.object1, DRAAK, 5);
@@ -322,7 +322,7 @@ bool DoGebruik(Progdata &progdata, Parsedata &parsedata)
 			UseItemToStatus(progdata, BOEKJE, parsedata.object1, RODETROL, 4);
 			break;
 		case GASGRANAAT:
-			UseItemToStatus(progdata, GASGRANAAT, parsedata.object1, GEZWEL, 2);
+			UseItemToStatus(progdata, GASGRANAAT, parsedata.object1, GEZWEL, progdata.items[GASMASKER].room == OWNED ? 2 : 3);
 			break;
 		}
 		BeastStatus(progdata);
@@ -344,7 +344,7 @@ void DoCombineer(Progdata &progdata, Parsedata &parsedata)
 	if (progdata.items[progdata.owneditems[parsedata.object1]].useableon > -2
 		 || -(progdata.items[progdata.owneditems[parsedata.object1]].useableon + 2) != progdata.owneditems[parsedata.object2])
 	{
-		cputs("Dat levert niets bruikbaars op.\r\n");
+		cputs("Dat levert niets bruikbaars op.\n");
 		return;
 	}
 
@@ -352,10 +352,10 @@ void DoCombineer(Progdata &progdata, Parsedata &parsedata)
 	{
 	case ZAKLAMP:
 	case BATTERIJEN:
-		cputs("Je schroeft de zaklamp open en schudt totdat de oude batterijen er uit komen\r\n"
-      		"vallen. Daarna steek je de \"trommelbatterijen\" erin en schroeft de lamp weer\r\n"
-				"dicht. Nadat je een paar keer op de zaklantaarn hebt geslagen zie je dat hij\r\n"
-				"het doet.\r\n");
+		cputs("Je schroeft de zaklamp open en schudt totdat de oude batterijen er uit komen\n"
+      		"vallen. Daarna steek je de \"trommelbatterijen\" erin en schroeft de lamp weer\n"
+				"dicht. Nadat je een paar keer op de zaklantaarn hebt geslagen zie je dat hij\n"
+				"het doet.\n");
 		progdata.status.lamppoints = INFINITE_POINTS;
 		progdata.items[BATTERIJEN].room = NO_ROOM;
 		if (progdata.owneditems[parsedata.object1] == BATTERIJEN)
@@ -365,8 +365,8 @@ void DoCombineer(Progdata &progdata, Parsedata &parsedata)
 		break;
 	case GASPATROON:
 	case ONTSTEKING:
-		cputs("Je plaatst de ontsteker op het mosterdgaspatroon. Na enig friemelen is het\r\n"
-				"resultaat een werkende mosterdgasgranaat.\r\n");
+		cputs("Je plaatst de ontsteker op het mosterdgaspatroon. Na enig friemelen is het\n"
+				"resultaat een werkende mosterdgasgranaat.\n");
 		progdata.items[GASPATROON].room = NO_ROOM;
 		progdata.items[ONTSTEKING].room = NO_ROOM;
 		progdata.items[GASGRANAAT].room = OWNED;
@@ -380,17 +380,17 @@ void DoLeg(Progdata &progdata, Parsedata &parsedata)
 {
 	if (progdata.owneditems[parsedata.object1] == ZAKLAMP)
 	{
-		cputs("Je bent inmiddels zo aan je zaklamp gehecht geraakt dat je hem niet meer kunt\r\n"
-				"missen.\r\n");
+		cputs("Je bent inmiddels zo aan je zaklamp gehecht geraakt dat je hem niet meer kunt\n"
+				"missen.\n");
 		return;
 	}
 	if (progdata.owneditems[parsedata.object1] == BATTERIJEN)
 	{
-		cputs("Je bent inmiddels zo aan je batterijen gehecht geraakt dat je ze niet meer kunt\r\n"
-				"missen.\r\n");
+		cputs("Je bent inmiddels zo aan je batterijen gehecht geraakt dat je ze niet meer kunt\n"
+				"missen.\n");
 		return;
 	}
-	cprintf("Je legt %s neer.\r\n", progdata.items[progdata.owneditems[parsedata.object1]].name);
+	wprintw(mainscr, "Je legt %s neer.\n", progdata.items[progdata.owneditems[parsedata.object1]].name);
 	progdata.items[progdata.owneditems[parsedata.object1]].room = progdata.status.curroom;
 	progdata.owneditems[parsedata.object1] = NO_ITEM;
 }
@@ -405,11 +405,11 @@ void DoPak(Progdata &progdata, Parsedata &parsedata)
 
 	if (i == 10)
 	{
-		cprintf("Je zakken zitten tjokvol, en je krijgt %s er niet in.\r\n", progdata.items[parsedata.object1].name);
+		wprintw(mainscr, "Je zakken zitten tjokvol, en je krijgt %s er niet in.\n", progdata.items[parsedata.object1].name);
 		return;
 	}
 
-	cprintf("Je pakt %s op en steekt deze in " E_GRAVE E_GRAVE "n van je zakken.\r\n", progdata.items[parsedata.object1].name);
+	wprintw(mainscr, "Je pakt %s op en steekt deze in " E_GRAVE E_GRAVE "n van je zakken.\n", progdata.items[parsedata.object1].name);
 
 	progdata.items[parsedata.object1].room = OWNED;
 	progdata.owneditems[i] = parsedata.object1;
@@ -419,25 +419,26 @@ void DoBekijk(Progdata &progdata, Parsedata &parsedata)
 {
 	if (progdata.status.curroom != 61 && progdata.status.curroom != 31 && progdata.status.curroom >= 20 && !progdata.status.lamp)
 	{
-		cputs("Het is veel te donker om wat dan ook te bekijken.\r\n");
+		cputs("Het is veel te donker om wat dan ook te bekijken.\n");
 		return;
 	}
 
-	cprintf("%s\r\n", progdata.items[progdata.owneditems[parsedata.object1]].descript);
+	cputs(progdata.items[progdata.owneditems[parsedata.object1]].descript);
+	putch('\n');
 }
 
 void DoAfwachten(void)
 {
 	static const char *actions[] =
    {
-   	"Je pulkt wat in je neus.\r\n",
-      "Je krabt wat achter je oren.\r\n",
-      "Je gaapt even uitgebreid.\r\n",
-      "Je trekt je broek even op.\r\n",
-      "Je pulkt wat smeer uit je oren.\r\n"
+   		"Je pulkt wat in je neus.\n",
+      	"Je krabt wat achter je oren.\n",
+      	"Je gaapt even uitgebreid.\n",
+      	"Je trekt je broek even op.\n",
+      	"Je pulkt wat smeer uit je oren.\n"
    };
 
-   cputs(actions[random(5)]);
+   cputs(actions[rnd(5)]);
 }
 
 void DoStatus(Progdata &progdata)
@@ -445,23 +446,27 @@ void DoStatus(Progdata &progdata)
 	int i;
 	int count = 0;
 
-	cputs("--- STATUSRAPPORT ---\r\n\r\n");
-	cprintf("Je hebt nog %d levenspunten.\r\n", progdata.status.lifepoints);
+	cputs("--- STATUSRAPPORT ---\n\n");
+	wprintw(mainscr, "Je hebt nog %d levenspunten.\n", progdata.status.lifepoints);
 	if (progdata.items[ZAKLAMP].room == OWNED)
-		cprintf("Je zaklamp staat %s.\r\n", progdata.status.lamp ? "aan" : "uit");
+		wprintw(mainscr, "Je zaklamp staat %s.\n", progdata.status.lamp ? "aan" : "uit");
 
 	for (i = 0; i < 10; i++)
 		if (progdata.owneditems[i] != NO_ITEM)
 			count++;
 
 	if (!count)
-		cputs("Je hebt niets.\r\n");
+		cputs("Je hebt niets.\n");
 	else
 	{
-		cputs("Je hebt in je bezit:\r\n");
+		cputs("Je hebt in je bezit:\n");
 		for (i = 0; i < 10; i++)
 			if (progdata.owneditems[i] != NO_ITEM)
-				cprintf("    %s\r\n", progdata.items[progdata.owneditems[i]].name);
+			{
+				cputs("    ");
+				wprintw(mainscr, progdata.items[progdata.owneditems[i]].name);
+				putch('\n');
+			}
 	}
 }
 
@@ -473,15 +478,15 @@ void DoStatus(Progdata &progdata)
 #define SYNTAX_PREFIX  			 "syntax: "
 #define AMBIGUOUS_ABBREVIATION "de afkorting \"%s\" is dubbelzinnig"
 
-#define SIMPLE_COMMAND(command) "   " command "\r\n"
+#define SIMPLE_COMMAND(command) "   " command "\n"
 #define ITEM_COMMAND(command)   SIMPLE_COMMAND(command " " ITEM)
 
 void DoHelp(void)
 {
    textcolor(WHITE);
-	cputs("--- HELP ---\r\n\r\n");
+	cputs("--- HELP ---\n\n");
    textcolor(LIGHTGRAY);
-	cputs("Commando's:\r\n"
+	cputs("Commando's:\n"
          SIMPLE_COMMAND(CMD_EAST)
 			SIMPLE_COMMAND(CMD_WEST)
 			SIMPLE_COMMAND(CMD_NORTH)
@@ -497,7 +502,7 @@ void DoHelp(void)
 			SIMPLE_COMMAND(CMD_EINDE)
 			SIMPLE_COMMAND(CMD_STATUS)
 			SIMPLE_COMMAND(CMD_HELP)
-   	  );	
+   	  );
 }
 
 void ShowInputError(const char *format, ...)
