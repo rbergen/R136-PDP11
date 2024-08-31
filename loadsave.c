@@ -1,11 +1,15 @@
 #include "r136.h"
+#include "ldstr.h"
 
-void ReportSaveFailure(fp, fpath)
+#define DATA_FILE	"data.rip"
+
+void ReportSaveFailure(progdata, fp, fpath)
+Progdata *progdata;
 FILE *fp;
 char *fpath;
 {
-    cputs("Fout bij wegschrijven status.");
-    cputs("\n\nStatus niet opgeslagen!\n");
+    cputs(Str(ERROR_WRITING_DATA));
+    cputs(Str(STATUS_NOT_SAVED));
     fclose(fp);
     unlink(fpath);
 }
@@ -14,27 +18,23 @@ void SaveStatus(progdata)
 Progdata *progdata;
 {
     FILE *fp;
-    char fpath[255];
     int i;
+    char *fpath = DATA_FILE;
 
-    memset(fpath, 0, 255);
-
-    strcat(strncpy(fpath, _argv[0], int(strrchr(_argv[0], '\\') - _argv[0]) + 1), "data.rip");
-
-    cputs("\n\nWil je je huidige status opslaan? ");
-    if (tolower(agetchar("jJnN")) != 'j')
+    cputs(Str(WANT_TO_SAVE_GAME));
+    if (tolower(agetchar(Str(YESNO))) != Str(YESNO)[0])
     {
         putch('\n');
         return;
     }
 
-    while ((fp = fopen(fpath, "wb")) == NULL)
+    while ((fp = fopen(fpath, "w")) == NULL)
     {
         textcolor(YELLOW);
-        cputs("\n\nKon het save-bestand niet openen voor schrijven. Nogmaals proberen? ");
-        if (tolower(agetchar("jJnN")) != 'j')
+        cputs(Str(COULDNT_OPEN_SAVE_FILE));
+        if (tolower(agetchar(Str(YESNO))) != Str(YESNO)[0])
         {
-            cputs("\n\nStatus niet opgeslagen!\n");
+            cputs(Str(STATUS_NOT_SAVED));
             unlink(fpath);
             return;
         }
@@ -42,32 +42,32 @@ Progdata *progdata;
 
     putch('\n');
 
-    for (i = 0; i < 25; i++)
+    for (i = 0; i < ITEM_COUNT; i++)
         if (fwrite(&(progdata->items[i].room), sizeof(char), 1, fp) < 1)
         {
-            ReportSaveFailure(fp, fpath);
+            ReportSaveFailure(progdata, fp, fpath);
             return;
         }
-    for (i = 0; i < 80; i++)
+    for (i = 0; i < ROOM_COUNT; i++)
         if (fwrite(progdata->rooms[i].connect, sizeof(char) * 6, 1, fp) < 1)
         {
-            ReportSaveFailure(fp, fpath);
+            ReportSaveFailure(progdata, fp, fpath);
             return;
         }
-    for (i = 0; i < 21; i++)
+    for (i = 0; i < LIVING_COUNT; i++)
         if (fwrite(&(progdata->living[i]), sizeof(Living), 1, fp) < 1)
         {
-            ReportSaveFailure(fp, fpath);
+            ReportSaveFailure(progdata, fp, fpath);
             return;
         }
     if (fwrite(progdata->owneditems, sizeof(char), 10, fp) < 10)
     {
-        ReportSaveFailure(fp, fpath);
+        ReportSaveFailure(progdata, fp, fpath);
         return;
     }
     if (fwrite(&(progdata->status), sizeof(Status), 1, fp) < 1)
     {
-        ReportSaveFailure(fp, fpath);
+        ReportSaveFailure(progdata, fp, fpath);
         return;
     }
     fclose(fp);
@@ -78,51 +78,46 @@ Progdata *progdata;
 FILE *fp;
 char *fpath;
 {
-    cputs("Fout bij lezen status.");
-    cputs("\n\nJe start een nieuw spel. ");
+    cputs(Str(ERROR_READING_DATA));
     fclose(fp);
     unlink(fpath);
-    cputs("Druk op een toets om te beginnen...");
+    cputs(Str(PRESS_ANY_KEY));
     getch();
     cputs("\n\n");
     Initialize(progdata);
-    return false;
+    return FALSE;
 }
 
 bool LoadStatus(progdata)
 Progdata *progdata;
 {
     FILE *fp;
-    char fpath[255];
     int i;
+    char *fpath = DATA_FILE;
 
-    memset(fpath, 0, 255);
-
-    strcat(strncpy(fpath, _argv[0], int(strrchr(_argv[0], '\\') - _argv[0]) + 1), "data.rip");
-
-    if ((fp = fopen(fpath, "rb")) == NULL)
+    if ((fp = fopen(fpath, "r")) == NULL)
     {
-        PrintCentered("Druk op een toets om te beginnen...");
+        PrintCentered(Str(PRESS_ANY_KEY));
         getch();
-        return false;
+        return FALSE;
     }
 
-    PrintCentered("Toets 1 voor een nieuw spel, 2 voor een gesaved spel: ");
+    PrintCentered(Str(NEW_OR_SAVED_GAME));
     if (agetchar("12") != '2')
     {
         fclose(fp);
         unlink(fpath);
-        return false;
+        return FALSE;
     }
     cputs("\n");
 
-    for (i = 0; i < 25; i++)
+    for (i = 0; i < ITEM_COUNT; i++)
         if (fread(&(progdata->items[i].room), sizeof(char), 1, fp) < 1)
             ReportLoadFailure(progdata, fp, fpath);
-    for (i = 0; i < 80; i++)
+    for (i = 0; i < ROOM_COUNT; i++)
         if (fread(progdata->rooms[i].connect, sizeof(char) * 6, 1, fp) < 1)
             ReportLoadFailure(progdata, fp, fpath);
-    for (i = 0; i < 21; i++)
+    for (i = 0; i < LIVING_COUNT; i++)
         if (fread(&(progdata->living[i]), sizeof(Living), 1, fp) < 1)
             ReportLoadFailure(progdata, fp, fpath);
     if (fread(progdata->owneditems, sizeof(char), 10, fp) < 10)
@@ -135,6 +130,6 @@ Progdata *progdata;
    if (progdata->living[BOOM].status == 2)
         ApplySimmeringForest(progdata);
 
-    return true;
+    return TRUE;
 }
 

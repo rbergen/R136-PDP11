@@ -1,19 +1,22 @@
 #include "r136.h"
 
-// loadsave.c
+/* init.c */
+void Initialize();
+void Deinitialize();
+
+/* loadsave.c */
 void SaveStatus();
 char LoadStatus();
 
-// intro.c
-void ShowSplashScreen();
-void ShowStartMessage();
-
-// use.c
-bool DoAction();
-
-// status.c
+/* status.c */
 void RoomStatus();
 char BeastStatus();
+
+/* use.c */
+bool DoAction();
+
+#define START_MESSAGE 0
+#define SPLASH_SCREEN 1
 
 int main(void)
 {
@@ -21,12 +24,12 @@ int main(void)
 
 	Initialize(&progdata);
 
-	ShowSplashScreen();
-
+	PrintFile('s', SPLASH_SCREEN, TRUE);
+	
 	if (!LoadStatus(&progdata))
-		ShowStartMessage();
+		PrintFile('s', START_MESSAGE, FALSE);
 
-	while (true)
+	while (TRUE)
 	{
 		RoomStatus(&progdata);
 		if (BeastStatus(&progdata))
@@ -38,26 +41,18 @@ int main(void)
 
 	getch();
 
-	delwin(mainscr);
-	clrscr();
-	endwin();
+	Deinitialize(&progdata);
 
 	return 0;
 }
 
 void ForceExit(void)
 {
-	char fpath[255];
-
 	getch();
 
-	memset(fpath, 0, 255);
-	strcat(strncpy(fpath, _argv[0], int(strrchr(_argv[0], '\\') - _argv[0]) + 1), "data.rip");
-	unlink(fpath);
+	unlink(DATA_FILE);
 
-	delwin(mainscr);
-	clrscr();
-	endwin();
+	Deinitialize(&progdata);
 
 	exit(0);
 }

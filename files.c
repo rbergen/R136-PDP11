@@ -54,19 +54,35 @@ char id, status;
 {
     FILE *fp;
     char line[100];
+    char *result;
+    bool printed = FALSE;
 
     fp = OpenDataFile('l', id);
     if (fp == NULL)
         return;
 
     /* Skip lines until we find the file section for our status */
-    while (fgets(line, 100, fp) != NULL && (line[0] != 'S' || cline[1] != 'T' || line[2] != status + '0'));
+    do 
+        result = fgets(line, 100, fp);
+    while (result != NULL && (strlen(line) < 3 || (line[0] != 'S' || line[1] != 'T' || line[2] != status + '0')));
+
+    /* This (EOF) can happen if the text file contains no text for our status */
+    if (result == NULL)
+    {
+        fclose(fp);
+        return;
+    }
 
     /* Read and print the status text for our status, until we hit the next status marker */
-    while (fgets(line, 100, fp) != NULL && (line[0] != 'S' || cline[1] != 'T'))
+    while (fgets(line, 100, fp) != NULL && (strlen(line) < 2 || (line[0] != 'S' || line[1] != 'T'))) 
+    {
         cputs(line);
+        printed = TRUE;
+    }
 
-    putch('\n');
+    /* Only add another newline if we actually printed any status text */
+    if (printed)
+        putch('\n');
 
     fclose(fp);
 }
@@ -88,16 +104,6 @@ bool add_newlines;
     single_line_text[strlen(single_line_text) - 1] = 0;
 
     return add_newlines ? put_newlines(single_line_text) : single_line_text;
-}
-
-void LoadItemName(number, name)
-char number, **name;
-{
-    char *loaded_name;
-
-    loaded_name = GetSingleLineText('i', ITEM_NAMES, number, false);
-    *name = (char *)malloc(strlen(loaded_name) + 1);
-    strcpy(*name, loaded_name);
 }
 
 void GetRoomText(number, name, description)
@@ -156,4 +162,38 @@ bool add_newlines;
     fclose(fp);
 
     return i;
+}
+
+void PrintFile(letter, number, centered)
+char letter, number;
+bool centered;
+{
+    FILE *fp;
+    char line[100];
+    char *result;
+
+    fp = OpenDataFile(letter, number);
+    if (fp == NULL)
+        return;
+
+    while (fgets(line, 100, fp) != NULL);
+    {
+        if (line[0] == 0) /* Ignore the last line without the newline*/
+            continue;
+        else if (line[0] == '\n')
+            putch('\n');
+        /* If the first character isn't a newline then we have at least one character, 
+           a newline and \0. */
+        else if (line[0] == 'B' && line[1] == 'R' && line[2] == '\n')
+        {
+            getch();
+            clrscr();
+        }
+        else if (centered)
+            PrintCentered(line);
+        else
+            cputs(line);
+    }
+
+    fclose(fp);
 }

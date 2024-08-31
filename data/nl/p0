@@ -10,3 +10,12 @@ Je bevindt je %s._
 Het is stekedonker en je ziet geen hand voor ogen._
 Hier ligt 
 Hier liggen 
+Om je heen zie je de smeulende resten van wat eens bos was.
+jJnN
+Toets 1 voor een nieuw spel, 2 voor een gesaved spel: 
+Fout bij lezen status.__Je start een nieuw spel. 
+Druk op een toets om te beginnen...
+__Wil je je huidige status opslaan? 
+Fout bij wegschrijven status.
+__Kon het save-bestand niet openen voor schrijven. Nogmaals proberen? 
+__Status niet opgeslagen!_

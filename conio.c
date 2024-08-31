@@ -24,8 +24,10 @@ int wherey(void)
     return y;
 }
 
-void PrintCentered(text)
+
+void do_print_centered(text, win)
 char *text;
+WINDOW *win;
 {
     int numspaces;
     char* spaces;
@@ -35,8 +37,8 @@ char *text;
 
     memset(spaces, ' ', numspaces);
     spaces[numspaces] = 0;
-    cputs(spaces);
+    waddstr(win, spaces);
     free(spaces);
 
-    cputs(text);
+    waddstr(win, text);
 }

@@ -44,18 +44,18 @@
 /* Value used to indicate Shift Tab keypress */
 #define L_STAB     4
 /* Character that will be written to screen in front of the actual input
-	string if any the functions is used.
-	Set to 0 to prevent a leading character being written. */
+    string if any the functions is used.
+    Set to 0 to prevent a leading character being written. */
 #define L_INPSTART 0
 /* Character that will be written to screen behind the actual input string if
-	any of the functions is used.
-	Set to 0 to prevent a closing character being written. */
+    any of the functions is used.
+    Set to 0 to prevent a closing character being written. */
 #define L_INPEND   0
 /* Value that determines the settings for Insert for all functions.
-	== 0: Insert off at start, use block cursor to indicate Insert on.
-	== 1: Insert on at start, use block cursor to indicate Insert on.
-	== 2: Insert off at start, use block cursor to indicate Insert off.
-	== 3: Insert on at start, use block cursor to indicate Insert off. */
+    == 0: Insert off at start, use block cursor to indicate Insert on.
+    == 1: Insert on at start, use block cursor to indicate Insert on.
+    == 2: Insert off at start, use block cursor to indicate Insert off.
+    == 3: Insert on at start, use block cursor to indicate Insert off. */
 #define L_INSFLAG  3
 
 /***************************************************************************
@@ -80,14 +80,14 @@
 int agetchar(allowed)
 char *allowed;
 {
-	char input;
+    char input;
 
-	do {
-		if (ascanf(0, 1, allowed, "%c", &input) == L_ESC)
-			input = L_ESC;
-	}
-	while (input == ' ');
-	return input;
+    do {
+        if (ascanf(0, 1, allowed, "%c", &input) == L_ESC)
+            input = L_ESC;
+    }
+    while (input == ' ');
+    return input;
 }
 
 /*=========================================================================*
@@ -125,22 +125,22 @@ int chckinp, length;
 char *allowed, *frmstr;
 va_dcl
 {
-	va_list argp;
-	char *inpstr;
-	int toret;
+    va_list argp;
+    char *inpstr;
+    int toret;
 
-	inpstr = (char *) calloc(length + 1, sizeof(char));
-	do {
-		memset(inpstr, ' ', length);
-		if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC)) {
-			va_start(argp);
-			toret = vsscanf(inpstr, frmstr, argp);
-			va_end(argp);
-		}
-	}
-	while (chckinp && (toret == EOF || !toret));
-	free(inpstr);
-	return toret;
+    inpstr = (char *) calloc(length + 1, sizeof(char));
+    do {
+        memset(inpstr, ' ', length);
+        if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC)) {
+            va_start(argp);
+            toret = vsscanf(inpstr, frmstr, argp);
+            va_end(argp);
+        }
+    }
+    while (chckinp && (toret == EOF || !toret));
+    free(inpstr);
+    return toret;
 }
 
 /* In 2.11BSD K&R C on the PDP-11, vsscanf() is missing. This version is implemented exactly the
@@ -148,7 +148,7 @@ va_dcl
    There are some interesting K&R C peculiarities in this:
    - In K&R C there is no explicit support for variadic arguments (i.e. the ... notation). Instead,
      the first variadic argument is a named argument, and other arguments are accessed using
-	 pointer arithmetic on that argument's address.
+     pointer arithmetic on that argument's address.
    - The type of the args argument is not declared, which means it's assumed to be int as per K&R C
      specifications. In fact, all arguments after the format string should be pointers to variables
      to fill with values extracted from str.
@@ -159,17 +159,16 @@ va_dcl
 */
 int vsscanf(str, fmt, args)
 char *str, *fmt;
-va_list args;
 {
-	FILE _strbuf;
+    FILE _strbuf;
 
-	_strbuf._flag = _IOREAD|_IOSTRG;
-	_strbuf._ptr = _strbuf._base = str;
-	_strbuf._cnt = 0;
-	while (*inpstr++)
-		_strbuf._cnt++;
-	_strbuf._bufsiz = _strbuf._cnt;
-	return _doscan(&_strbuf, fmt,  args);
+    _strbuf._flag = _IOREAD|_IOSTRG;
+    _strbuf._ptr = _strbuf._base = str;
+    _strbuf._cnt = 0;
+    while (*str++)
+        _strbuf._cnt++;
+    _strbuf._bufsiz = _strbuf._cnt;
+    return _doscan(&_strbuf, fmt,  &args);
 }
 
 /*=========================================================================*
@@ -222,123 +221,123 @@ int strinp (allowed, input, inpx, inpy, caps, esc, curm)
 char *allowed, *input;
 int inpx, inpy, caps, esc, curm;
 {
-	int ins = 1, ilen, ipos = 0, toret = 0, curx, cury;
-	char ichar;
+    int ins = 1, ilen, ipos = 0, toret = 0, curx, cury;
+    char ichar;
 
-	ilen = strlen(input) - 1;
-	curx = wherex();
-	cury = wherey();
+    ilen = strlen(input) - 1;
+    curx = wherex();
+    cury = wherey();
 
-	gotoxy(inpx, inpy);
+    gotoxy(inpx, inpy);
 
-	if (L_INPSTART) {
-	   	putch(L_INPSTART);
-		inpx++;
-	}
-	cputs(input);
-	if (L_INPEND)
-		putch(L_INPEND);
+    if (L_INPSTART) {
+           putch(L_INPSTART);
+        inpx++;
+    }
+    cputs(input);
+    if (L_INPEND)
+        putch(L_INPEND);
 
-	do {
-		gotoxy(inpx + ipos, inpy);
-		switch (ichar = getch()) {
-		case 0:
-			switch (getch()) {
-			case 75: /* Arrow left */
-				if (ipos)
-					ipos--;
-				break;
+    do {
+        gotoxy(inpx + ipos, inpy);
+        switch (ichar = getch()) {
+        case 0:
+            switch (getch()) {
+            case 75: /* Arrow left */
+                if (ipos)
+                    ipos--;
+                break;
 
-			case 77: /* Arrow right */
-				if (ipos < ilen)
-					ipos++;
-				break;
+            case 77: /* Arrow right */
+                if (ipos < ilen)
+                    ipos++;
+                break;
 
-			case 71: /* Home */
-				ipos = 0;
-				break;
+            case 71: /* Home */
+                ipos = 0;
+                break;
 
-			case 79: /* End */
-				ipos = ilen;
-				if (input[ipos] == ' ')
-					while (ipos && input[ipos - 1] == ' ')
-						ipos--;
-				break;
+            case 79: /* End */
+                ipos = ilen;
+                if (input[ipos] == ' ')
+                    while (ipos && input[ipos - 1] == ' ')
+                        ipos--;
+                break;
 
-			case 82: /* Insert */
-				ins = ins ? 0 : 1;
-				break;
+            case 82: /* Insert */
+                ins = ins ? 0 : 1;
+                break;
 
-			case 83: /* Delete */
-				memmove(input + ipos, input + ipos + 1, ilen - ipos);
-				input[ilen] = ' ';
-				cputs(input + ipos);
-				break;
+            case 83: /* Delete */
+                memmove(input + ipos, input + ipos + 1, ilen - ipos);
+                input[ilen] = ' ';
+                cputs(input + ipos);
+                break;
 
-			case 72: /* Arrow up */
-				if (curm)
-					toret = L_UP;
-				break;
+            case 72: /* Arrow up */
+                if (curm)
+                    toret = L_UP;
+                break;
 
-			case 80: /* Arrow down */
-				if (curm)
-					toret = L_DOWN;
-				break;
+            case 80: /* Arrow down */
+                if (curm)
+                    toret = L_DOWN;
+                break;
 
-			case 15: /* Shift-Tab */
-				if (curm)
-					toret = L_STAB;
-				break;
-			}
-			break;
+            case 15: /* Shift-Tab */
+                if (curm)
+                    toret = L_STAB;
+                break;
+            }
+            break;
 
-		case 8: /* Backspace */
-			if (ipos)
-			{  memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
-				input[ilen] = ' ';
-				gotoxy(inpx + --ipos, inpy);
-				cputs(input + ipos);
-			}
-			break;
+        case 8: /* Backspace */
+            if (ipos)
+            {  memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
+                input[ilen] = ' ';
+                gotoxy(inpx + --ipos, inpy);
+                cputs(input + ipos);
+            }
+            break;
 
-		case 9: /* Tab */
-			if (curm)
-				toret = L_TAB;
-			break;
+        case 9: /* Tab */
+            if (curm)
+                toret = L_TAB;
+            break;
 
-		case 13: /* Enter */
-			toret = L_ENTER;
-			break;
+        case 13: /* Enter */
+            toret = L_ENTER;
+            break;
 
-		case 27: /* Escape */
-			if (esc)
-				toret = L_ESC;
-			break;
+        case 27: /* Escape */
+            if (esc)
+                toret = L_ESC;
+            break;
 
-		default:
-			if (caps > 0)
-				ichar = toupper(ichar);
-			else if (caps < 0)
-				ichar = tolower(ichar);
+        default:
+            if (caps > 0)
+                ichar = toupper(ichar);
+            else if (caps < 0)
+                ichar = tolower(ichar);
 
-			if (strchr(allowed, ichar)) {
-				putch(ichar);
+            if (strchr(allowed, ichar)) {
+                putch(ichar);
 
-				if (ins) {
-					memmove(input + ipos + 1, input + ipos, ilen - ipos);
-					cputs(input + ipos + 1);
-				}
+                if (ins) {
+                    memmove(input + ipos + 1, input + ipos, ilen - ipos);
+                    cputs(input + ipos + 1);
+                }
 
-				input[ipos] = ichar;
+                input[ipos] = ichar;
 
-				if (ipos < ilen)
-					ipos++;
-			}
-			break;
-		}
-	}
-	while (!toret);
+                if (ipos < ilen)
+                    ipos++;
+            }
+            break;
+        }
+    }
+    while (!toret);
 
-	gotoxy(curx, cury);
-	return toret;
+    gotoxy(curx, cury);
+    return toret;
 }

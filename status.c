@@ -1,4 +1,6 @@
 #include "r136.h"
+#include "living.h"
+#include "ldstr.h"
 
 void ShowDirString();
 void ShowItems();
@@ -10,11 +12,19 @@ void DraakStatus();
 void GezwelStatus();
 void BarbecueStatus();
 void BoomStatus();
-void DiamantStatus();
-void ComputerStatus();
 void DrakeKopStatus();
 bool LavaStatus();
-void PapierStatus();
+
+bool IsRoomDark(roomnumber)
+int roomnumber;
+{
+    return roomnumber >= 20   /* Caves are rooms >=20 and dark, except: */
+        && roomnumber != 31   /* Fluorescent tube cave */
+        && roomnumber != 48   /* Emptiness */
+        && roomnumber != 49   /* Sand bank */
+        && roomnumber != 53   /* Chasm */
+        && roomnumber != 61;  /* Radioactive cave */
+}
 
 void RoomStatus(progdata)
 Progdata *progdata;
@@ -26,10 +36,7 @@ Progdata *progdata;
 
     wprintw(mainscr, progdata->strings[YOU_ARE_HERE], roomname);
 
-    if (progdata->status.curroom != 61
-        && progdata->status.curroom != 31
-        && progdata->status.curroom >= 20
-        && !progdata->status.lamp)
+    if (IsRoomDark(progdata->status.curroom) && !progdata->status.lamp)
     {
         cputs(progdata->strings[TOO_DARK_TO_SEE]);
     }
@@ -97,13 +104,11 @@ Progdata *progdata;
     {
         cputs(progdata->strings[count > 1 ? ITEMS_HERE : ITEM_HERE]);
 
-        for (i = 0; i < 25; i++)
+        for (i = 0; i < ITEM_COUNT; i++)
             if (progdata->items[i].room == progdata->status.curroom)
             {
                 if (wherex() > 55)
                     putch('\n');
-                if (progdata->items[i].name == NULL)
-                    LoadItemName(i, &(progdata->items[i].name));
                 cputs(progdata->items[i].name);
 
                 switch(--count)
@@ -135,7 +140,7 @@ Progdata *progdata;
             beastfound = i;
 
     if (beastfound == -1)
-        return true;
+        return TRUE;
 
     PrintLivingStatus(beastfound, progdata->living[beastfound].status);
 
@@ -174,7 +179,7 @@ Progdata *progdata;
         break;
     
     case STEMMEN:
-        if (progdata->living[STEMMEN].status == 0)
+        if (!progdata->living[STEMMEN].status)
             progdata->living[STEMMEN].status = 1;
         break;
     
@@ -186,12 +191,9 @@ Progdata *progdata;
         BoomStatus(progdata);
         break;
     
-    case DIAMANT:
-        DiamantStatus(progdata);
-        break;
-    
     case COMPUTER:
-        ComputerStatus(progdata);
+        if (!progdata->living[COMPUTER].status || progdata->living[COMPUTER].status == 2)
+            progdata->living[COMPUTER].status++;
         break;
     
     case DRAKEKOP:
@@ -202,12 +204,16 @@ Progdata *progdata;
         return LavaStatus(progdata);
     
     case VACUUM:
-        progdata->status.lifepoints -= 4; //   Levenswond
-        progdata->status.curroom = 76; //   Grot terug
-        return false;
+        progdata->status.lifepoints -= BIG_WOUND;
+        progdata->status.curroom = 76; /* Back one cave */
+        return FALSE;
     
     case PAPIER:
-        PapierStatus(progdata);
+        if (progdata->living[PAPIER].status == 1)
+        {
+            progdata->items[PAPIERITEM].room = 66;
+            progdata->living[PAPIER].status = 2;
+        }
         break;
     
     case NOORDMOERAS:
@@ -225,7 +231,7 @@ Progdata *progdata;
             progdata->status.curroom = 47;
             break;
         }
-        return false;
+        return FALSE;
     
     case MISTGROT:
         switch(rnd(3))
@@ -240,13 +246,13 @@ Progdata *progdata;
             progdata->status.curroom = 38;
             break;
         }
-        return false;
+        return FALSE;
     
     case TELEPORT:
         progdata->status.curroom = 1;
-        return false;
+        return FALSE;
     }
-    return true;
+    return TRUE;
 }
 
 void HellehondStatus(progdata)
@@ -255,7 +261,7 @@ Progdata &progdata;
     switch (progdata->living[HELLEHOND].status)
     {
     case 1:
-        progdata->status.lifepoints--; //  Wond
+        progdata->status.lifepoints--;
         /* Deliberate fall-through! */
     case 0:
         progdata->living[HELLEHOND].status++;
@@ -363,7 +369,7 @@ Progdata *progdata;
         progdata->living[GEZWEL].status = 1;
         break;
     case 3:
-        progdata->status.lifepoints -= 4; //    Grote wond
+        progdata->status.lifepoints -= BIG_WOUND;
         /* Deliberate fall-through! */
     case 2:
         progdata->rooms[75].connect[NORTH] = 70;
@@ -377,31 +383,11 @@ Progdata *progdata;
 {
     switch (progdata->living[BARBECUE].status)
     {
-    case 0:
-        cputs("Op deze open plek staat een barbecue gezellig te branden.\n\n");
-
-        break;
     case 1:
-        cputs("Als je de hasj op de barbecue gooit verschiet de vlam van kleur. Verder gebeurt\n\
-er niets.\n\n");
-
-        progdata->living[BARBECUE].status = 3;
-        break;
     case 2:
-        cputs("Als je het vlees op de barbecue gooit verschiet de vlam van kleur. Verder\n\
-gebeurt er niets.\n\n");
-
         progdata->living[BARBECUE].status = 3;
-        break;
-    case 3:
-        cputs("De barbecue brandt nog steeds, alleen iets onrustiger dan eerst.\n\n");
-
         break;
     case 4:
-      cputs("Een grote rookontwikkeling treedt op wanneer het tweede ingredient in \n\n\
-barbecue belandt.\n\
-Knetterend smelten de 2 ingredienten om tot een koekje.\n\n");
-
         progdata->items[KOEKJE].room = progdata->status.curroom;
         progdata->living[BARBECUE].status = 0;
         break;
@@ -411,7 +397,7 @@ Knetterend smelten de 2 ingredienten om tot een koekje.\n\n");
 void ApplySimmeringForest(progdata)
 Progdata *progdata;
 {
-    static char *smeulendbos = "Om je heen zie je de smeulende resten van wat eens bos was.";
+    static char *smeulendbos = progdata->strings[SIMMERING_FOREST];
 
     for (int i = 0; i < 20; i += 5)
         for (int j = 0; j < 2; j++)
@@ -427,183 +413,66 @@ Progdata *progdata;
 {
     switch (progdata->living[BOOM].status)
     {
-    case 0:
-        cputs("In een kleine open plek staat een grote, kurkdroge, dode boom. Op de stam zit\n\
-een bordje met daarop de tekst \"Roken en open vuur verboden\".\n\n");
-
-        break;
+    case 2:
+        progdata->status.lifepoints -= BIG_WOUND;
+        /* Deliberate fall-through! */
     case 1:
-        cputs("Uit de pijp van de vlammenwerper spuit een enorme vlam. De boom begint langzaam\n\
-te branden, en weldra staat hij in lichterlaaie. De vlammen slaan om zich heen,\n\
-en het hele bos begint mee te branden. Je bent omringd door een enorme vuurzee,\n\
-en de hitte is enorm.\n\n");
-
-        if (progdata->items[HITTEPAK].room != OWNED)
-        {
-            cputs("Je hebt niets om je te beschermen tegen de hitte, en je loopt flinke brandwon-\n\
-den op.\n\n");
-
-            progdata->status.lifepoints -= 4; //   Levenswond
-        }
-
         ApplySimmeringForest(progdata);
 
         progdata->items[GROENKRISTAL].room = 4;
         progdata->living[DIAMANT].status = 1;
-        progdata->living[BOOM].status = 2;
-        break;
-    case 2:
-        cputs("Uit de grond steken nog een paar wortels, en er naast ligt een verkoold stuk\n\
-bord met daarop \"R   n e  op n v u  ver  d n\".\n\n");
-
+        progdata->living[BOOM].status = 3;
         break;
     }
 }
 
-void DiamantStatus(progdata)
+void DrakeKopStatus(progdata)
 Progdata *progdata;
-{
-    switch (progdata->living[DIAMANT].status)
-    {
-    case 0:
-        cputs("Je struikelt over iets. Door de begroeiing zie je niet wat het is.\n\n");
-
-        break;
-    }
-}
-
-void ComputerStatus(progdata)
-Progdata *progdata;
-{
-    switch (progdata->living[COMPUTER].status)
-    {
-    case 0:
-        cputs("Er staat een computer van het merk Beull die bestaat bestaat uit een kast met\n\
-een 3.5-inch drive en een monitor. Op de monitor staat: \"Datadisk invoeren\n\
-a.u.b.\".\n\n");
-
-        progdata->living[COMPUTER].status = 1;
-        break;
-    case 1:
-        cputs("De computer wacht nog steeds.\n\n");
-
-        break;
-    case 2:
-        cputs("De drive begint te lezen en na korte tijd verschijnt er informatie op het\n\
-scherm. Er staat: \"In het onderste grottenstelsel moet men een letter-\n\
-route volgen die resulteert in de naam van het te vinden voorwerp.\".\n\
-Na even wordt het scherm zwart.\n\n");
-
-        progdata->living[COMPUTER].status = 3;
-        break;
-    case 3:
-        cputs("Er valt niets te zien op de monitor en de computer is stil.\n\n");
-
-        break;
-    }
-}
-
-void DrakeKopStatus(Progdata &progdata)
 {
     switch (progdata->living[DRAKEKOP].status)
     {
-    case 0:
-        cputs("Er zit in het noorden een zware, dichte deur met daarnaast een drakekop met een\n\
-geopende muil. Op de deur zit een zwaar slot.\n\n");
-
-        break;
-    case 1:
-        cputs("Je stopt het kristal in de muil van de drakekop, die daarop dicht- en weer\n\
-opengaat. Het kristal is nu verdwenen, en de ogen van de kop beginnen licht te\n\
-gloeien.\n\n");
-
-        progdata->living[DRAKEKOP].status = 2;
-        break;
-    case 2:
-        cputs("De ogen van de draak blijven licht gloeien.\n\n");
-
-        break;
-    case 3:
-        cputs("Je stopt nog een kristal in de muil. Weer sluit en opent deze, en weer is het\n"
-                "kristal verdwenen. Het schijnsel uit de ogen wordt nu sterker.\n\n");
-
-        progdata->living[DRAKEKOP].status = 4;
-        break;
-    case 4:
-        cputs("De ogen van de draak blijven gloeien.\n\n");
-
-        break;
     case 5:
-        cputs("Je legt het laatste kristal in de kop. De muil sluit zich weer, en nu blijft\n"
-                "hij dicht. De ogen beginnen nu steeds feller te gloeien. Op een gegeven moment\n"
-                "concentreert de gloed zich tot een erg felle lichtstraal, die langs je schiet\n"
-                "en wordt weerkaatst in een spiegel vlak achter je. De spiegel reflecteert het\n"
-                "licht met akelige precisie op het zware slot dat door de enorme hitte verdampt.\n"
-                "Daarna zwaait de deur langzaam met veel gepiep open.\n\n");
-
         progdata->rooms[32].connect[NORTH] = 27;
-        progdata->living[DRAKEKOP].status = 6;
-        break;
-    case 6:
-        cputs("De zware deur is nu open en geeft toegang tot een ruimte.\n\n");
-
+        /* Deliberate fall-through! */
+    case 1:
+    case 3:
+        progdata->living[DRAKEKOP].status++;
         break;
     }
 }
 
-bool LavaStatus(Progdata &progdata)
+bool LavaStatus(progdata)
+Progdata *progdata;
 {
     switch (progdata->living[LAVA].status)
     {
     case 0:
-        if (progdata->items[HITTEPAK].room == OWNED)
-            cputs("Voor je zie je een krater waarin lava opborrelt. Van het lava komt een dikke\n"
-                    "damp, en een rode gloed verlicht de omtrek. De hitte is enorm, maar het hitte-\n"
-                    "pak beschermt je tegen verbranding.\n\n");
-        else
+        /* No text was shown for status 0 as such. Depending on the player wearing 
+           the heat suit or not, we now decide what status text to show. */
+        PrintLivingStatus(LAVA, progdata->items[HITTEPAK].room == OWNED ? 2 : 3);
+
+        if (progdata->items[HITTEPAK].room != OWNED)
         {
-            cputs("Voor je zie je een krater waarin lava opborrelt. De hitte is zo intens, dat je\n"
-                    "een aantal brandwonden oploopt en naar achteren wordt geblazen.\n\n");
-
-            progdata->status.curroom = 54; //   Grot terug
-            progdata->status.lifepoints -= 4; //   Levenswond
-            return false;
+            progdata->status.curroom = 54; /* Back one cave */
+            progdata->status.lifepoints -= BIG_WOUND;
+            return FALSE;
         }
-        return true;
+        break;
     case 1:
-        cputs("Je gooit de positronenbom met een pisboogje in de lava. Met luid gesis zakt\n"
-                "de bom langzaam weg naar beneden. De lava begint op een gegeven moment vreemd\n"
-                "te borrelen en verschiet ineens van rood naar groen. Dan zie je een oogver-\n"
-                "blindende flits vanuit het lava. Daarna wordt het weer rustiger.\n\n"
-                "Het lijkt erop dat je de wereld hebt behoed voor de totaalvernietiging door\n"
-                "dit positronenwapen, waarvan de beginselen mede van jouw handen komen. Je mis-\n"
-                "sie is voltooid, en vermoeid en vol van gemengde gevoelens verlaat je het\n"
-                "grottenstelsel.\n\n");
-
+        /* Mission completed! */
         ForceExit();
     }
-    return true;
+    return TRUE;
 }
 
-void PapierStatus(Progdata &progdata)
+void PapierStatus(progdata)
+Progdata *progdata;
 {
     switch (progdata->living[PAPIER].status)
     {
-    case 0:
-        cputs("Er zit een dicht, houten luik in het plafond. Je kunt er niet bij.\n\n");
-
-        break;
     case 1:
-        cputs("Het luik in het plafond gaat open en er dwarrelt een vel papier naar beneden.\n\n");
-
         progdata->items[PAPIERITEM].room = 66;
         progdata->living[PAPIER].status = 2;
         break;
-    case 2:
-        cputs("Het luik aan het plafond hangt nu open. Er zit een leeg gat.\n\n");
-
-        break;
     }
 }
-
-
