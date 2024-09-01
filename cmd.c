@@ -33,7 +33,6 @@ int FindLayingItemNum();
 #define SWORD_TEXT_COUNT        4
 
 #define COMMAND_LINE_TEXTS      2
-
 #define THERES_NO_USE           0
 #define NO_WOUNDS_TO_TREAT      1
 #define CANT_GO_THAT_WAY        2
@@ -45,6 +44,16 @@ int FindLayingItemNum();
 #define YOU_PICK_UP             8
 #define TOO_DARK_TO_LOOK        9
 
+#define AFWACHTEN_ACTIONS       4
+
+#define STATUS_LINE_TEXTS       5
+#define FIRST_LINE              0
+#define LAMP_IS_ON              1
+#define LAMP_IS_OFF             2
+#define YOU_POSSESS_NOTHING     3
+#define YOU_POSSESS             4
+
+#define HELP_TEXT               6
 
 void DoAction(progdata)
 Progdata *progdata;
@@ -160,7 +169,7 @@ Progdata *progdata;
             DoStatus(progdata);
             break;
         case HELP:
-            DoHelp();
+            PrintFile('c', HELP_TEXT, FALSE);
             break;
         }
 
@@ -451,16 +460,16 @@ Parsedata *parsedata;
     putch('\n');
 }
 
-void DoAfwachten(void)
+void DoAfwachten()
 {
-    static const char *actions[] =
+    static bool loaded = FALSE;
+    static char*actions[5];
+
+    if (!loaded)
     {
-        "Je pulkt wat in je neus.\n",
-        "Je krabt wat achter je oren.\n",
-        "Je gaapt even uitgebreid.\n",
-        "Je trekt je broek even op.\n",
-        "Je pulkt wat smeer uit je oren.\n"
-    };
+        LoadStrings(actions, 5, 'c', AFWACHTEN_ACTIONS, TRUE);
+        loaded = TRUE;
+    }
 
     cputs(actions[rnd(5)]);
 }
@@ -470,25 +479,24 @@ void DoStatus(Progdata &progdata)
     int i;
     int count = 0;
 
-    cputs("--- STATUSRAPPORT ---\n\n");
-    wprintw(mainscr, "Je hebt nog %d levenspunten.\n", progdata->status.lifepoints);
+    wprintw(mainscr, GetSingleLineText('c', STATUS_LINE_TEXTS, FIRST_LINE, TRUE), progdata->status.lifepoints);
     if (progdata->items[ZAKLAMP].room == OWNED)
-        wprintw(mainscr, "Je zaklamp staat %s.\n", progdata->status.lamp ? "aan" : "uit");
+        cputs(GetSingleLineText('c', STATUS_LINE_TEXTS, progdata->status.lamp ? LAMP_IS_ON : LAMP_IS_OFF, TRUE));
 
     for (i = 0; i < 10; i++)
         if (progdata->owneditems[i] != NO_ITEM)
             count++;
 
     if (!count)
-        cputs("Je hebt niets.\n");
+        cputs(GetSingleLineText('c', STATUS_LINE_TEXTS, YOU_POSSESS_NOTHING, TRUE));
     else
     {
-        cputs("Je hebt in je bezit:\n");
+        cputs(GetSingleLineText('c', STATUS_LINE_TEXTS, YOU_POSSESS, TRUE));
         for (i = 0; i < 10; i++)
             if (progdata->owneditems[i] != NO_ITEM)
             {
                 cputs("    ");
-                wprintw(mainscr, progdata->items[progdata->owneditems[i]].name);
+                cputs(progdata->items[progdata->owneditems[i]].name);
                 putch('\n');
             }
     }
@@ -502,84 +510,65 @@ void DoStatus(Progdata &progdata)
 #define SYNTAX_PREFIX  			 "syntax: "
 #define AMBIGUOUS_ABBREVIATION "de afkorting \"%s\" is dubbelzinnig"
 
-#define SIMPLE_COMMAND(command) "   " command "\n"
-#define ITEM_COMMAND(command)   SIMPLE_COMMAND(command " " ITEM)
-
-void DoHelp(void)
+void ShowInputError(format, va_alist)
+char *format;
+va_dcl
 {
-   textcolor(WHITE);
-    cputs("--- HELP ---\n\n");
-   textcolor(LIGHTGRAY);
-    cputs("Commando's:\n"
-         SIMPLE_COMMAND(CMD_EAST)
-            SIMPLE_COMMAND(CMD_WEST)
-            SIMPLE_COMMAND(CMD_NORTH)
-            SIMPLE_COMMAND(CMD_SOUTH)
-            SIMPLE_COMMAND(CMD_UP)
-            SIMPLE_COMMAND(CMD_DOWN)
-            ITEM_COMMAND(CMD_GEBRUIK)
-            SIMPLE_COMMAND(CMD_COMBINEER " " ITEM AND_WITH ITEM)
-            ITEM_COMMAND(CMD_PAK)
-            ITEM_COMMAND(CMD_LEG)
-            ITEM_COMMAND(CMD_BEKIJK)
-            SIMPLE_COMMAND(CMD_AFWACHTEN)
-            SIMPLE_COMMAND(CMD_EINDE)
-            SIMPLE_COMMAND(CMD_STATUS)
-            SIMPLE_COMMAND(CMD_HELP)
-         );
-}
-
-void ShowInputError(const char *format, ...)
-{
+    va_list argp;
     char spaces[80];
     memset(spaces, ' ', 79);
     spaces[79] = 0;
-       cputs(spaces);
-       textcolor(LIGHTRED);
-       cputs("\r< ");
+    cputs(spaces);
+    cputs("\r< ");
 
      /* I hate this fixed buffer size thing... But let's pretend it didn't matter in the 
        PDP-11 days. */
-   char buffer[255];
-   va_list args;
+    char buffer[255];
 
-   va_start(args, format);
-   vsprintf(buffer, format, args);
-   va_end(args);
+    va_start(argp);
+    vsprintf(buffer, format, argp);
+    va_end(argp);
 
-    textcolor(LIGHTGRAY);
-   cputs(buffer);
-   getch();
+    cputs(buffer);
+    getch();
 }
 
-inline void ProcessParseError(Parsedata &parsedata, const char *message)
+void ProcessParseError(parsedata, message)
+Parsedata *parsedata;
+char *message;
 {
     ShowInputError(message);
-    parsedata.error = TRUE;
+    parsedata->error = TRUE;
 }
 
-inline bool FindAndCheckOwnedItem(Progdata &progdata, Parsedata &parsedata, char &target, const char *itemname)
+bool FindAndCheckOwnedItem(progdata, parsedata, target, itemname)
+Progdata *progdata;
+Parsedata *parsedata;
+char *target, *itemname;
 {
-   target = FindOwnedItemNum(progdata, itemname);
-    if (target < 0)
-   {
+    *target = FindOwnedItemNum(progdata, itemname);
+    if (*target < 0)
+    {
         parsedata.error = TRUE;
-      return FALSE;
-   }
+        return FALSE;
+    }
 
     return TRUE;
 }
 
-inline bool ParseSingleItemCommand(Progdata &progdata, Parsedata &parsedata, const char* eoword, const char *command)
+bool ParseSingleItemCommand(progdata, parsedata, eoword, command)
+Progdata *progdata;
+Parsedata *parsedata;
+char* eoword, *command;
 {
     if (*eoword != ' ')
-   {
-       ShowInputError(SYNTAX_PREFIX "%s " ITEM, command);
+    {
+        ShowInputError(SYNTAX_PREFIX "%s " ITEM, command);
         parsedata.error = TRUE;
-       return FALSE;
-   }
+        return FALSE;
+    }
 
-    return FindAndCheckOwnedItem(progdata, parsedata, parsedata.object1, eoword + 1);
+    return FindAndCheckOwnedItem(progdata, parsedata, &(parsedata->object1), eoword + 1);
 }
 
 #define PARSE_ERROR_RETURN(message) 		  { ProcessParseError(parsedata, message); return; }
@@ -588,6 +577,9 @@ inline bool ParseSingleItemCommand(Progdata &progdata, Parsedata &parsedata, con
 #define RETURN_IF_SIC_INVALID(command) 	  { if (!ParseSingleItemCommand(progdata, parsedata, eoword, command)) return; }
 
 void ParseInput(Progdata &progdata, const char *inpstr, Parsedata &parsedata)
+Progdata *progdata;
+char *inpstr;
+Parsedata *parsedata
 {
     char *eoword;
     char *curp;
@@ -624,15 +616,19 @@ void ParseInput(Progdata &progdata, const char *inpstr, Parsedata &parsedata)
     case NO_COMMAND:
         ProcessParseError(parsedata, INVALID_COMMAND);
         return;
+
     case GEBRUIK:
       RETURN_IF_SIC_INVALID(CMD_GEBRUIK);
         break;
+
     case LEG:
       RETURN_IF_SIC_INVALID(CMD_LEG);
         break;
+
     case BEKIJK:
       RETURN_IF_SIC_INVALID(CMD_BEKIJK);
         break;
+
     case COMBINEER:
         if (*eoword != ' ' || (!strstr(curp, AND) && !strstr(curp, WITH)))
           PARSE_SYNTAX_ERROR_RETURN(CMD_COMBINEER " " ITEM AND_WITH ITEM);
@@ -655,6 +651,7 @@ void ParseInput(Progdata &progdata, const char *inpstr, Parsedata &parsedata)
         if (parsedata.object1 == parsedata.object2)
             PARSE_ERROR_RETURN("je kunt een voorwerp niet met zichzelf combineren");
         break;
+
     case PAK:
         if (*eoword != ' ')
           PARSE_SYNTAX_ERROR_RETURN(CMD_PAK " " ITEM);
