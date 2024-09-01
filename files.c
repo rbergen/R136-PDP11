@@ -18,8 +18,8 @@ char *language = "nl";
 static char single_line_text[SINGLE_LINE_LENGTH];
 static char room_text[ROOM_TEXT_LENGTH];
 
-char *replace_char(char *str, char find, char replace)
-char *str, find, replace
+char *replace_char(str, find, replace)
+char *str, find, replace;
 {
     char *current_pos = strchr(str, find);
 
@@ -91,6 +91,7 @@ char *GetSingleLineText(letter, number, line, add_newlines)
 char letter, number, line;
 bool add_newlines;
 {
+    int i;
     FILE *fp;
 
     fp = OpenDataFile(letter, number);
@@ -109,6 +110,7 @@ bool add_newlines;
 void GetRoomText(number, name, description)
 char number, **name, **description;
 {
+    int i;
     FILE *fp;
     char filenumber;
     char *semicolon;
@@ -145,7 +147,7 @@ bool add_newlines;
 {
     int i;
     FILE *fp;
-    char[100] line;
+    char line[100];
 
     fp = OpenDataFile('p', 0);
     if (fp == NULL) 
@@ -176,10 +178,9 @@ bool centered;
     if (fp == NULL)
         return;
 
-    while (fgets(line, 100, fp) != NULL);
+    while (fgets(line, 100, fp) != NULL)
     {
-        if (line[0] == 0) /* Ignore the last line without the newline*/
-            continue;
+        if (line[0] == 0); /* Ignore the last line without the newline*/
         else if (line[0] == '\n')
             putch('\n');
         /* If the first character isn't a newline then we have at least one character, 

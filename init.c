@@ -1,5 +1,10 @@
+#include <sgtty.h>
 #include <sys/time.h>
 #include "r136.h"
+#include "cmd.h"
+#include "items.h"
+#include "living.h"
+#include "ldstr.h"
 
 char levelcon[11][3] = {
     {6, DOWN, 34},
@@ -62,14 +67,26 @@ Progdata *progdata;
 {
     int i;
     struct timeval tv;
-
+    
+    /* Initialize random number generator */
     gettimeofday(&tv, NULL);
     srandom((int)tv.tv_sec);
+
+    /* Initialize curses */
+    initscr();
+    erase();    /* Not clrscr(), because we mean the whole window! */
+
+    /* Print the title header and keep it from scrolling away */
+    PrintHeader(progdata->strings[TITLE]);
+    mainscr = subwin(0, 0, 2, 0);
+    scrollok(mainscr, TRUE);
+    refresh();
 
     /* LoadStrings heap-allocates the strings it loads! */
     LoadStrings(progdata->strings, PRELOADED_STRING_COUNT, 'p', 0, TRUE);
     LoadStrings(progdata->commands, COMMAND_COUNT, 'c', 0, FALSE);
 
+    /* Set up our own data structures */
     progdata->paperroute[0] = 69;
     progdata->paperroute[1] = 64;
     progdata->paperroute[2] = 63;
@@ -82,14 +99,6 @@ Progdata *progdata;
     progdata->status.lifepoints = 20;
     progdata->status.lamp = FALSE;
     progdata->status.lamppoints = 60;
-
-    initscr();
-    erase();    /* Not clrscr(), because we mean the whole window! */
-
-    PrintHeader("**** Missiecode: R136 ****");
-    mainscr = newwin(LINES - 2, COLS, 2, 0);
-
-    srand();
 
     for (i = 0; i < 10; i++)
         progdata->owneditems[i] = NO_ITEM;
@@ -105,10 +114,6 @@ Progdata *progdata;
 {
     int i;
 
-    delwin(mainscr);
-    erase();	/* Not clrscr(), because we mean the whole window! */
-    endwin();
-
     /* Let's be a responsible citizen and free heap memory for strings */
     for (i = 0; i < PRELOADED_STRING_COUNT; i++)
         free(progdata->strings[i]);
@@ -118,6 +123,12 @@ Progdata *progdata;
 
     for (i = 0; i < ITEM_COUNT; i++)
         free(progdata->items[i].name);
+
+    /* Tear down curses */
+    delwin(mainscr);
+    erase();	/* Not clrscr(), because we mean the whole window! */
+    refresh();
+    endwin();
 }
 
 bool SetRooms(rooms)
@@ -128,6 +139,7 @@ Room *rooms;
 
     for (i = 0; i < 80; i++)
     {
+        rooms[i].descript = NULL;
         rooms[i].connect[EAST] = i + 1;
         rooms[i].connect[WEST] = i - 1;
         rooms[i].connect[NORTH] = i - 5;
@@ -178,7 +190,7 @@ bool SetItems(items)
 Item *items;
 {
     int i;
-    char *itemnames[ITEM_COUNT]
+    char *itemnames[ITEM_COUNT];
 
     /* LoadStrings heap-allocates the strings it loads! */
     LoadStrings(itemnames, ITEM_COUNT, 'i', 0, FALSE);

@@ -18,7 +18,7 @@ bool DoAction();
 #define START_MESSAGE 0
 #define SPLASH_SCREEN 1
 
-int main(void)
+int main()
 {
 	Progdata progdata;
 
@@ -32,9 +32,8 @@ int main(void)
 	while (TRUE)
 	{
 		RoomStatus(&progdata);
-		if (BeastStatus(&progdata))
-			if (!DoAction(&progdata))
-				break;
+		if (!BeastStatus(&progdata) || !DoAction(&progdata))
+			break;
 	}
 
 	SaveStatus(&progdata);
@@ -46,7 +45,8 @@ int main(void)
 	return 0;
 }
 
-void ForceExit(void)
+void ForceExit(progdata)
+Progdata *progdata;
 {
 	getch();
 

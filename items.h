@@ -26,4 +26,4 @@
 #define KOEKJE			23
 #define GASGRANAAT		24
 
-#define ON_ITEM(item)	(-(item + 2))
+#define ON_ITEM(item)	(-((item) + 2))

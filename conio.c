@@ -6,7 +6,7 @@
 
 WINDOW *mainscr;
 
-int wherex(void)
+int wherex()
 {
     int x, y;
 
@@ -15,7 +15,7 @@ int wherex(void)
     return x;
 }
 
-int wherey(void)
+int wherey()
 {
     int x, y;
 
@@ -25,9 +25,9 @@ int wherey(void)
 }
 
 
-void do_print_centered(text, win)
-char *text;
+void do_print_centered(win, text)
 WINDOW *win;
+char *text;
 {
     int numspaces;
     char* spaces;

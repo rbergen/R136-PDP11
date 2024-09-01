@@ -11,22 +11,17 @@
 
 /* Flag values */
 
-#define NO_COMMAND      -1
-#define NO_ROOM         -1
-#define OWNED           -2
-#define NO_ITEM         -1
-#define AMBIGUOUS_ITEM  -2
-#define INFINITE_POINTS -1
-#define NOTHING          1
+#define NO_ROOM             -1
+#define OWNED               -2
+#define NO_ITEM             -1
+#define NOTHING             -1
 
-#define PRELOADED_STRING_COUNT  28
+#define PRELOADED_STRING_COUNT  23
 #define COMMAND_COUNT           15
 #define ROOM_COUNT              80
 #define LIVING_COUNT            21
 #define ITEM_COUNT              25
 #define MAX_OWNED_ITEMS         10
-
-#define BIG_WOUND    4
 
 /*
   Structures
@@ -34,6 +29,7 @@
 
 typedef struct
 {
+    char *descript;
     char connect[6];
 } Room;
 
@@ -80,14 +76,18 @@ typedef struct
     bool error;
 } Parsedata;
 
-#define rnd(x)      (random() % (x))
+#define rnd(x)      ((int)(random() % (x)))
+
+#define DATA_FILE	"data.rip"
 
 extern char *language;
 
 /* strinp.c */
 int agetchar();
 int ascanf();
-int strinp ();
+int vsscanf();
+int getkeypress();
+int strinp();
 
 /* status.c */
 void ApplySimmeringForest();
@@ -102,7 +102,4 @@ void PrintLivingStatus();
 char *GetSingleLineText();
 void GetRoomText();
 int LoadStrings();
-void LoadItemName();
-void PrintFile()
-
-
+void PrintFile();

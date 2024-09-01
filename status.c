@@ -1,4 +1,5 @@
 #include "r136.h"
+#include "items.h"
 #include "living.h"
 #include "ldstr.h"
 
@@ -14,6 +15,8 @@ void BarbecueStatus();
 void BoomStatus();
 void DrakeKopStatus();
 bool LavaStatus();
+
+#define BIG_WOUND    4
 
 bool IsRoomDark(roomnumber)
 int roomnumber;
@@ -42,6 +45,9 @@ Progdata *progdata;
     }
     else
     {
+        if (progdata->rooms[progdata->status.curroom].descript)
+            roomdescript = progdata->rooms[progdata->status.curroom].descript;
+
         if (roomdescript)
         {
             cputs(roomdescript);
@@ -256,7 +262,7 @@ Progdata *progdata;
 }
 
 void HellehondStatus(progdata)
-Progdata &progdata;
+Progdata *progdata;
 {
     switch (progdata->living[HELLEHOND].status)
     {
@@ -397,10 +403,11 @@ Progdata *progdata;
 void ApplySimmeringForest(progdata)
 Progdata *progdata;
 {
-    static char *smeulendbos = progdata->strings[SIMMERING_FOREST];
+    char *smeulendbos = progdata->strings[SIMMERING_FOREST];
+    int i, j;
 
-    for (int i = 0; i < 20; i += 5)
-        for (int j = 0; j < 2; j++)
+    for (i = 0; i < 20; i += 5)
+        for (j = 0; j < 2; j++)
             if (i + j != 6)
                 progdata->rooms[i + j].descript = smeulendbos;
     progdata->rooms[2].descript = smeulendbos;
@@ -460,7 +467,7 @@ Progdata *progdata;
         break;
     case 1:
         /* Mission completed! */
-        ForceExit();
+        ForceExit(progdata);
     }
     return TRUE;
 }

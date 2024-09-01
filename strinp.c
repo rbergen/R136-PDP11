@@ -25,6 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include "conio.h"
 
 /***************************************************************************
@@ -82,7 +85,8 @@ char *allowed;
 {
     char input;
 
-    do {
+    do 
+    {
         if (ascanf(0, 1, allowed, "%c", &input) == L_ESC)
             input = L_ESC;
     }
@@ -130,9 +134,11 @@ va_dcl
     int toret;
 
     inpstr = (char *) calloc(length + 1, sizeof(char));
-    do {
+    do 
+    {
         memset(inpstr, ' ', length);
-        if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC)) {
+        if (!((toret = strinp(allowed, inpstr, wherex(), wherey(), 0, 1, 0)) == L_ESC)) 
+        {
             va_start(argp);
             toret = vsscanf(inpstr, frmstr, argp);
             va_end(argp);
@@ -169,6 +175,100 @@ char *str, *fmt;
         _strbuf._cnt++;
     _strbuf._bufsiz = _strbuf._cnt;
     return _doscan(&_strbuf, fmt,  &args);
+}
+
+#define KEY_UP          -1
+#define KEY_DOWN        -2
+#define KEY_RIGHT       -3
+#define KEY_LEFT        -4
+#define KEY_HOME        -5
+#define KEY_INSERT      -6
+#define KEY_DELETE      -7
+#define KEY_END         -8
+#define KEY_PAGEUP      -9
+#define KEY_PAGEDOWN    -10
+#define KEY_STAB        -11
+#define KEY_ESCAPE      -12
+#define KEY_UNHANDLED   -13
+
+#define TIMEOUT 100000
+
+int HandleEscapeKey()
+{
+    int ch;
+    struct timeval tv;
+    struct fd_set readfds;
+
+    /* Set up the timeout */
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = TIMEOUT;
+
+    /* Check if more input is available within the timeout */
+    ch = select(1, &readfds, NULL, NULL, &tv);
+
+    if (!ch) return KEY_ESCAPE;
+
+    switch (getchar())
+    {
+    case '[':
+        ch = getchar();
+
+        /* Arrow keys */
+        if (ch >= 'A' && ch <= 'D') 
+            return 'A' - ch - 1;
+
+        if (ch == 'H') return KEY_HOME;
+
+        if (ch == 'Z') return KEY_STAB;
+
+        if (ch >= '1' && ch <= '9')
+        {
+            if (getchar() == '~')
+            {
+                /* Home, Insert, Delete, End, PgUp, PgDn */
+                if (ch >= '1' && ch <= '6')
+                    return '1' - ch + KEY_HOME;
+
+                return KEY_UNHANDLED;
+            }
+
+            /* Numeric escape codes always end with ~ */
+            while (getchar() != '~');
+        }
+        break;
+
+    case 'O': /* We can get this after an Escape, but we don't handle these. 
+                 So, we pull the next character that inevitably follows and move on.*/
+        getchar();
+        break;
+    }
+
+    return KEY_UNHANDLED;
+}
+
+int getkeypress()
+{
+    int ch;
+    struct sgttyb old_term, new_term;
+
+    /* Set up terminal for non-blocking input */
+    ioctl(STDIN_FILENO, TIOCGETP, &old_term);
+    new_term = old_term;
+    new_term.sg_flags |= RAW;
+    new_term.sg_flags &= ~ECHO;
+    ioctl(STDIN_FILENO, TIOCSETP, &new_term);
+
+    ch = getchar();
+
+    if (ch == 27)
+        ch = HandleEscapeKey();
+
+    /* Reset terminal to normal mode */
+    ioctl(STDIN_FILENO, TIOCSETP, &old_term);
+
+    return ch;
 }
 
 /*=========================================================================*
@@ -222,7 +322,8 @@ char *allowed, *input;
 int inpx, inpy, caps, esc, curm;
 {
     int ins = 1, ilen, ipos = 0, toret = 0, curx, cury;
-    char ichar;
+    int ichar;
+    bool refresh_pending = TRUE;
 
     ilen = strlen(input) - 1;
     curx = wherex();
@@ -231,99 +332,115 @@ int inpx, inpy, caps, esc, curm;
     gotoxy(inpx, inpy);
 
     if (L_INPSTART) {
-           putch(L_INPSTART);
+        putch(L_INPSTART);
         inpx++;
     }
     cputs(input);
     if (L_INPEND)
         putch(L_INPEND);
 
-    do {
-        gotoxy(inpx + ipos, inpy);
-        switch (ichar = getch()) {
-        case 0:
-            switch (getch()) {
-            case 75: /* Arrow left */
-                if (ipos)
-                    ipos--;
-                break;
+    do 
+    {
+        if (refresh_pending)
+        {
+            gotoxy(inpx + ipos, inpy);
+            wrefresh(mainscr);
+            refresh_pending = FALSE;
+        }
 
-            case 77: /* Arrow right */
-                if (ipos < ilen)
-                    ipos++;
-                break;
-
-            case 71: /* Home */
-                ipos = 0;
-                break;
-
-            case 79: /* End */
-                ipos = ilen;
-                if (input[ipos] == ' ')
-                    while (ipos && input[ipos - 1] == ' ')
-                        ipos--;
-                break;
-
-            case 82: /* Insert */
-                ins = ins ? 0 : 1;
-                break;
-
-            case 83: /* Delete */
-                memmove(input + ipos, input + ipos + 1, ilen - ipos);
-                input[ilen] = ' ';
-                cputs(input + ipos);
-                break;
-
-            case 72: /* Arrow up */
-                if (curm)
-                    toret = L_UP;
-                break;
-
-            case 80: /* Arrow down */
-                if (curm)
-                    toret = L_DOWN;
-                break;
-
-            case 15: /* Shift-Tab */
-                if (curm)
-                    toret = L_STAB;
-                break;
+        switch (ichar = getkeypress()) 
+        {
+        case KEY_LEFT:
+            if (ipos) 
+            { 
+                ipos--;
+                refresh_pending = TRUE;
             }
             break;
 
-        case 8: /* Backspace */
+        case KEY_RIGHT:
+            if (ipos < ilen) 
+            {
+                ipos++;
+                refresh_pending = TRUE;
+            }
+            break;
+
+        case KEY_UP:
+            if (curm) toret = L_UP;
+            break;
+
+        case KEY_DOWN: 
+            if (curm) toret = L_DOWN;
+            break;
+
+        case KEY_HOME: 
+            ipos = 0;
+            refresh_pending = TRUE;
+            break;
+
+        case KEY_END: 
+            ipos = ilen;
+            if (input[ipos] == ' ')
+                while (ipos && input[ipos - 1] == ' ')
+                    ipos--;
+
+            refresh_pending = TRUE;
+            break;
+
+        case KEY_INSERT:
+            ins = ins ? 0 : 1;
+            break;
+
+        case KEY_DELETE:
+            memmove(input + ipos, input + ipos + 1, ilen - ipos);
+            input[ilen] = ' ';
+            cputs(input + ipos);
+            refresh_pending = TRUE;
+            break;
+
+        case 127: /* Backspace */
             if (ipos)
-            {  memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
+            {  
+                memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
                 input[ilen] = ' ';
                 gotoxy(inpx + --ipos, inpy);
                 cputs(input + ipos);
+                refresh_pending = TRUE;
             }
             break;
 
         case 9: /* Tab */
-            if (curm)
-                toret = L_TAB;
+            if (curm) toret = L_TAB;
             break;
 
-        case 13: /* Enter */
+        case KEY_STAB: 
+            if (curm) toret = L_STAB;
+            break;
+    
+        case 10: /* Enter */
             toret = L_ENTER;
             break;
 
-        case 27: /* Escape */
-            if (esc)
-                toret = L_ESC;
+        case KEY_ESCAPE: /* Escape */
+            if (esc) toret = L_ESC;
             break;
 
         default:
+            if (ichar < 0)
+                break;
+
             if (caps > 0)
                 ichar = toupper(ichar);
             else if (caps < 0)
                 ichar = tolower(ichar);
 
-            if (strchr(allowed, ichar)) {
+            if (strchr(allowed, ichar)) 
+            {
                 putch(ichar);
 
-                if (ins) {
+                if (ins) 
+                {
                     memmove(input + ipos + 1, input + ipos, ilen - ipos);
                     cputs(input + ipos + 1);
                 }
@@ -332,6 +449,8 @@ int inpx, inpy, caps, esc, curm;
 
                 if (ipos < ilen)
                     ipos++;
+
+                refresh_pending = TRUE;
             }
             break;
         }

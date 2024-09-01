@@ -1,7 +1,6 @@
 #include "r136.h"
+#include "living.h"
 #include "ldstr.h"
-
-#define DATA_FILE	"data.rip"
 
 void ReportSaveFailure(progdata, fp, fpath)
 Progdata *progdata;
@@ -30,7 +29,6 @@ Progdata *progdata;
 
     while ((fp = fopen(fpath, "w")) == NULL)
     {
-        textcolor(YELLOW);
         cputs(Str(COULDNT_OPEN_SAVE_FILE));
         if (tolower(agetchar(Str(YESNO))) != Str(YESNO)[0])
         {

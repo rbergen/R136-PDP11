@@ -17,6 +17,8 @@
 #define ERROR_WRITING_DATA      18
 #define COULDNT_OPEN_SAVE_FILE  19
 #define STATUS_NOT_SAVED        20
+#define WITH                    21
+#define TITLE                   22
 
-#define Str(id)         progdata->strings[id]
-#define IsConfirmed()   (tolower(agetchar(Str(YESNO))) == Str(YESNO)[0])
+#define Str(id)             progdata->strings[id]
+#define IsConfirmed()       (tolower(agetchar(Str(YESNO))) == Str(YESNO)[0])

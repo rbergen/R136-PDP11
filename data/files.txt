@@ -1,0 +1,15 @@
+c0: commands
+c2: single line texts
+c4: abide texts
+c5: status texts
+c6: help texts
+c7: error line texts
+c8: game over text
+c*: "use" texts for items, * equals item id 
+i0: item names (preloaded)
+i1: item descriptions
+l*: living object status text, * equals object id
+p0: preloaded application-wide line texts
+r*: room names and descriptions, each file contains texts for 20 rooms
+s0: story intro, BR indicates page breaks
+s1: credits

@@ -2,9 +2,8 @@
 #include "ldstr.h"
 #include "items.h"
 #include "living.h"
-#include "cmd.h"
 
-bool DoGebruik();
+void DoGebruik();
 void UseItemToStatus();
 void DoCombineer();
 void DoLeg();
@@ -12,11 +11,26 @@ void DoPak();
 void DoBekijk();
 void DoAfwachten();
 void DoStatus();
-void DoHelp();
 void ParseInput();
 int FindOwnedItemNum();
 int FindLayingItemNum();
 
+/* File-specific flag values */
+#define NO_COMMAND          -1
+#define AMBIGUOUS_COMMAND   -2
+#define AMBIGUOUS_ITEM      -2
+#define INFINITE_POINTS     -1
+
+/* File numbers for specific topics. Other 'c' files contain "use" texts
+   for corresponding items */
+#define COMMAND_LINE_TEXTS      2
+#define AFWACHTEN_ACTIONS       4
+#define STATUS_LINE_TEXTS       5
+#define HELP_TEXT               6
+#define PARSE_ERROR_TEXTS       7
+#define GAME_OVER_TEXT          8
+
+/* Lamp */
 #define LAMP_FADES              0
 #define LAMP_DIES               1
 #define LAMP_OFF                2
@@ -26,13 +40,14 @@ int FindLayingItemNum();
 #define NEED_LAMP               6
 #define NEED_BATTERIES          7
 
+/* Sword */
 #define STRIKE_AND_MISS         0
 #define STRIKE_AND_HIT          1
 #define BEAST_SEVERELY_WOUNDED  2
 #define WANT_TO_STRIKE_AGAIN    3
 #define SWORD_TEXT_COUNT        4
 
-#define COMMAND_LINE_TEXTS      2
+/* Command line texts */
 #define THERES_NO_USE           0
 #define NO_WOUNDS_TO_TREAT      1
 #define CANT_GO_THAT_WAY        2
@@ -44,43 +59,47 @@ int FindLayingItemNum();
 #define YOU_PICK_UP             8
 #define TOO_DARK_TO_LOOK        9
 
-#define AFWACHTEN_ACTIONS       4
-
-#define STATUS_LINE_TEXTS       5
+/* Status line texts */
 #define FIRST_LINE              0
 #define LAMP_IS_ON              1
 #define LAMP_IS_OFF             2
 #define YOU_POSSESS_NOTHING     3
 #define YOU_POSSESS             4
 
-#define HELP_TEXT               6
+/* Parse error line texts */
+#define NO_COMMAND_GIVEN        0
+#define INVALID_COMMAND         1
+#define AMBIGUOUS_ABBREVIATION  2
+#define COMBINEER_SYNTAX        3
+#define PAK_SYNTAX              4
+#define SIC_SYNTAX              5
+#define CANT_COMBINE_WITH_SELF  6
+#define ITEM_NOT_HERE           7
+#define YOU_HAVE_NO             8
 
-void DoAction(progdata)
+bool DoAction(progdata)
 Progdata *progdata;
 {
     char inpstr[65];
     Parsedata parsedata;
     int cury;
-    int gnu_rooms[5] = {44, 47, 48, 49, 54};
+    static int gnu_rooms[5] = {44, 47, 48, 49, 54};
 
     if (progdata->status.lifepoints <= 0)
     {
-        cputs("Badend in je eigen bloed bezwijk je aan je verwondingen. Terwijl je liggend op\n"
-              "de grond met moeite naar adem snakt, hoor je in de verte een luid gelach.\n"
-              "Dan zakken je ogen dicht en stopt je hart met kloppen.\n"
-              "Op hetzelfde moment ontploft de bom en sterft de aarde met jou.\n\n");
-        ForceExit();
+        PrintFile('c', GAME_OVER_TEXT, FALSE);
+        ForceExit(progdata);
     }
 
     if (progdata->status.lamppoints > 0 && progdata->status.lamp)
     {
-        switch(--progdata->status.lamppoints)
+        switch(--(progdata->status.lamppoints))
         {
         case 10:
-            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_FADES));
+            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_FADES, TRUE));
             break;
         case 0:
-            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_DIES));
+            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_DIES, TRUE));
             progdata->status.lamp = FALSE;
             break;
         }
@@ -94,10 +113,9 @@ Progdata *progdata;
 
         do
         {
-            gotoxy(0, cury);
-            cputs("> ");
+            cputs("\r> ");
             strinp(" abcdefghijklmnopqrstuvwxyz", inpstr, wherex(), wherey(), -1, 0, 0);
-            gotoxy(0, cury);
+            putch('\r');
             ParseInput(progdata, inpstr, &parsedata);
         }
         while (parsedata.error);
@@ -136,6 +154,7 @@ Progdata *progdata;
 
         case GEBRUIK:
             DoGebruik(progdata, &parsedata);
+            break;
 
         case COMBINEER:
             DoCombineer(progdata, &parsedata);
@@ -168,6 +187,7 @@ Progdata *progdata;
         case STATUS:
             DoStatus(progdata);
             break;
+
         case HELP:
             PrintFile('c', HELP_TEXT, FALSE);
             break;
@@ -194,19 +214,19 @@ Parsedata *parsedata;
         if (progdata->status.lamp)
         {
             progdata->status.lamp = !progdata->status.lamp;
-            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_OFF));
+            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_OFF, TRUE));
             if (IsRoomDark(progdata->status.curroom)) 
-                cputs(GetSingleLineText('c', ZAKLAMP, GONE_DARK));
+                cputs(GetSingleLineText('c', ZAKLAMP, GONE_DARK, TRUE));
             putch('\n');
             break;
         }
         if (progdata->status.lamppoints)
         {
             progdata->status.lamp = !progdata->status.lamp;
-            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_ON));
+            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_ON, TRUE));
         }
         else
-            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_NEEDS_BATTERIES));
+            cputs(GetSingleLineText('c', ZAKLAMP, LAMP_NEEDS_BATTERIES, TRUE));
         break;
     
     case VERBAND:
@@ -277,7 +297,7 @@ Parsedata *parsedata;
             if (progdata->living[DRAAK].status != 4)
             {
                 cputs(GetSingleLineText('c', COMMAND_LINE_TEXTS, THERES_NO_USE, TRUE));
-                return TRUE;
+                return;
             }
             UseItemToStatus(progdata, SLAAPMUTS, parsedata->object1, DRAAK, 5);
             break;
@@ -350,7 +370,7 @@ Progdata *progdata;
         }
         putch('\n');
     }
-    putch('\n');`
+    putch('\n');
 
     if (!progdata->living[beast].strike)
     {
@@ -456,7 +476,7 @@ Parsedata *parsedata;
         return;
     }
 
-    cputs(progdata->items[progdata->owneditems[parsedata.object1]].descript);
+    cputs(GetSingleLineText('i', 1, progdata->owneditems[parsedata->object1], TRUE));
     putch('\n');
 }
 
@@ -474,7 +494,8 @@ void DoAfwachten()
     cputs(actions[rnd(5)]);
 }
 
-void DoStatus(Progdata &progdata)
+void DoStatus(progdata)
+Progdata *progdata;
 {
     int i;
     int count = 0;
@@ -502,28 +523,17 @@ void DoStatus(Progdata &progdata)
     }
 }
 
-#define ITEM 	  					 "<voorwerp>"
-#define AND_WITH 					 " en/met "
-#define WITH 						 " met "
-#define AND  						 " en "
-#define INVALID_COMMAND 		 "ongeldig commando gegeven"
-#define SYNTAX_PREFIX  			 "syntax: "
-#define AMBIGUOUS_ABBREVIATION "de afkorting \"%s\" is dubbelzinnig"
-
 void ShowInputError(format, va_alist)
 char *format;
 va_dcl
 {
     va_list argp;
     char spaces[80];
-    memset(spaces, ' ', 79);
-    spaces[79] = 0;
-    cputs(spaces);
-    cputs("\r< ");
-
-     /* I hate this fixed buffer size thing... But let's pretend it didn't matter in the 
+    /* I hate this fixed buffer size thing... But let's pretend it didn't matter in the 
        PDP-11 days. */
     char buffer[255];
+
+    cputs("\r< ");
 
     va_start(argp);
     vsprintf(buffer, format, argp);
@@ -549,7 +559,7 @@ char *target, *itemname;
     *target = FindOwnedItemNum(progdata, itemname);
     if (*target < 0)
     {
-        parsedata.error = TRUE;
+        parsedata->error = TRUE;
         return FALSE;
     }
 
@@ -563,31 +573,27 @@ char* eoword, *command;
 {
     if (*eoword != ' ')
     {
-        ShowInputError(SYNTAX_PREFIX "%s " ITEM, command);
-        parsedata.error = TRUE;
+        ShowInputError(GetSingleLineText('c', PARSE_ERROR_TEXTS, SIC_SYNTAX, FALSE), command);
+        parsedata->error = TRUE;
         return FALSE;
     }
 
     return FindAndCheckOwnedItem(progdata, parsedata, &(parsedata->object1), eoword + 1);
 }
 
-#define PARSE_ERROR_RETURN(message) 		  { ProcessParseError(parsedata, message); return; }
-#define PARSE_SYNTAX_ERROR_RETURN(message)  PARSE_ERROR_RETURN(SYNTAX_PREFIX message)
+#define PARSE_ERROR_RETURN(message)         { ProcessParseError(parsedata, message); return; }
 #define RETURN_IF_NOT_FOUND(item, itemname) { if (!FindAndCheckOwnedItem(progdata, parsedata, item, itemname)) return; }
-#define RETURN_IF_SIC_INVALID(command) 	  { if (!ParseSingleItemCommand(progdata, parsedata, eoword, command)) return; }
 
-void ParseInput(Progdata &progdata, const char *inpstr, Parsedata &parsedata)
+void ParseInput(progdata, inpstr, parsedata)
 Progdata *progdata;
 char *inpstr;
-Parsedata *parsedata
+Parsedata *parsedata;
 {
-    char *eoword;
-    char *curp;
-    char workstr[65];
-    char itemname[25];
+    char *eoword, *curp;
+    char workstr[65], itemname[25];
     int i;
 
-    parsedata.error = FALSE;
+    parsedata->error = FALSE;
 
     strcpy(workstr, inpstr);
 
@@ -600,113 +606,106 @@ Parsedata *parsedata
         eoword = curp + strlen(curp);
 
     if (eoword == curp)
-       PARSE_ERROR_RETURN("geen commando gegeven")
+        PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, NO_COMMAND_GIVEN, FALSE));
 
-    parsedata.command = NO_COMMAND;
+    parsedata->command = NO_COMMAND;
 
-    for (i = 0; i < 15; i++)
-        if (!strncmp(cmds[i], curp, int(eoword - curp)))
-        {
-          parsedata.command = i;
-         break;
-      }
+    for (i = 0; i < COMMAND_COUNT && parsedata->command != AMBIGUOUS_COMMAND; i++)
+        if (!strncmp(progdata->commands[i], curp, (int)(eoword - curp)))
+            parsedata->command = parsedata->command == NO_COMMAND ? i : AMBIGUOUS_COMMAND;
 
-    switch (parsedata.command)
+    switch (parsedata->command)
     {
     case NO_COMMAND:
-        ProcessParseError(parsedata, INVALID_COMMAND);
-        return;
+        PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, INVALID_COMMAND, FALSE));
+
+    case AMBIGUOUS_COMMAND:
+        ShowInputError(GetSingleLineText('c', PARSE_ERROR_TEXTS, AMBIGUOUS_ABBREVIATION, FALSE), eoword + 1);
+        parsedata->error = TRUE;
+        break;
 
     case GEBRUIK:
-      RETURN_IF_SIC_INVALID(CMD_GEBRUIK);
-        break;
-
     case LEG:
-      RETURN_IF_SIC_INVALID(CMD_LEG);
-        break;
-
     case BEKIJK:
-      RETURN_IF_SIC_INVALID(CMD_BEKIJK);
+        ParseSingleItemCommand(progdata, parsedata, eoword, progdata->commands[parsedata->command]);
         break;
 
     case COMBINEER:
         if (*eoword != ' ' || (!strstr(curp, AND) && !strstr(curp, WITH)))
-          PARSE_SYNTAX_ERROR_RETURN(CMD_COMBINEER " " ITEM AND_WITH ITEM);
+            PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, COMBINEER_SYNTAX, FALSE));
 
         curp = eoword + 1;
         if ((eoword = strstr(curp, AND)) == NULL)
             eoword = strstr(curp, WITH);
 
-        strncpy(itemname, curp, ((eoword - curp) < 25 ? int(eoword - curp) : 24));
-        itemname[((eoword - curp) < 25 ? int(eoword - curp) : 24)] = 0;
+        strncpy(itemname, curp, ((eoword - curp) < 25 ? (int)(eoword - curp) : 24));
+        itemname[((eoword - curp) < 25 ? (int)(eoword - curp) : 24)] = 0;
 
-      RETURN_IF_NOT_FOUND(parsedata.object1, itemname);
+        RETURN_IF_NOT_FOUND(parsedata->object1, itemname);
 
         curp = eoword + strlen(strstr(curp, AND) == curp ? AND : WITH);
         strncpy(itemname, curp, (strlen(curp) < 25 ? strlen(curp) : 24));
         itemname[(strlen(curp) < 25 ? strlen(curp) : 24)] = 0;
 
-      RETURN_IF_NOT_FOUND(parsedata.object2, itemname);
+        RETURN_IF_NOT_FOUND(parsedata->object2, itemname);
 
-        if (parsedata.object1 == parsedata.object2)
-            PARSE_ERROR_RETURN("je kunt een voorwerp niet met zichzelf combineren");
+        if (parsedata->object1 == parsedata->object2)
+            ProcessParseError(parsedata, GetSingleLineText('c', PARSE_ERROR_TEXTS, CANT_COMBINE_WITH_SELF, FALSE));
         break;
 
     case PAK:
         if (*eoword != ' ')
-          PARSE_SYNTAX_ERROR_RETURN(CMD_PAK " " ITEM);
+            PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, PAK_SYNTAX, FALSE));
 
-        parsedata.object1 = FindLayingItemNum(progdata, eoword + 1);
+        parsedata->object1 = FindLayingItemNum(progdata, eoword + 1);
 
-      if (parsedata.object1 < 0)
-      {
-          ShowInputError(parsedata.object1 == NO_ITEM
-              ? "je ziet hier geen \"%s\" die je kunt meenemen"
-              : AMBIGUOUS_ABBREVIATION, eoword + 1);
-         parsedata.error = TRUE;
-         return;
-      }
+        if (parsedata->object1 < 0)
+        {
+            ShowInputError(GetSingleLineText('c', PARSE_ERROR_TEXTS, parsedata->object1 == NO_ITEM
+                ? ITEM_NOT_HERE : AMBIGUOUS_ABBREVIATION), eoword + 1);
+            parsedata->error = TRUE;
+        }
         break;
     }
 }
 
-int FindOwnedItemNum(Progdata &progdata, const char *itemname)
+int FindOwnedItemNum(progdata, itemname)
+Progdata *progdata;
+char *itemname;
 {
     int item = NO_ITEM;
     int i;
 
-    for (i = 0; i < 10 && item != AMBIGUOUS_ITEM; i++)
-        if (progdata->owneditems[i] != NO_ITEM)
-            if (strstr(progdata->items[progdata->owneditems[i]].name, itemname))
-                item = item == NO_ITEM ? i : AMBIGUOUS_ITEM;
+    for (i = 0; i < MAX_OWNED_ITEMS && item != AMBIGUOUS_ITEM; i++)
+        if (progdata->owneditems[i] != NO_ITEM
+            && strstr(progdata->items[progdata->owneditems[i]].name, itemname))
+        {    
+            item = item == NO_ITEM ? i : AMBIGUOUS_ITEM;
+        }
 
    if (item < 0)
-      ShowInputError(item == NO_ITEM
-          ? "je hebt geen \"%s\""
-          : AMBIGUOUS_ABBREVIATION, itemname);
+        ShowInputError(GetSingleLineText('c', PARSE_ERROR_TEXTS, item == NO_ITEM
+            ? YOU_HAVE_NO : AMBIGUOUS_ABBREVIATION, FALSE), itemname);
 
     return item;
 }
 
-int FindLayingItemNum(Progdata &progdata, const char *itemname)
+int FindLayingItemNum(progdata, itemname)
+Progdata *progdata;
+char *itemname;
 {
     int item = NO_ITEM;
     int i;
 
-    if (progdata->status.curroom != 61
-       && progdata->status.curroom != 31
-      && progdata->status.curroom >= 20
-      && !progdata->status.lamp)
-    {
-       return NO_ITEM;
-   }
+    if (IsRoomDark(progdata->status.curroom) && !progdata->status.lamp)
+        return NO_ITEM;
 
-    for (i = 0; i < 25 && item != AMBIGUOUS_ITEM; i++)
+    for (i = 0; i < ITEM_COUNT && item != AMBIGUOUS_ITEM; i++)
         if (progdata->status.curroom == progdata->items[i].room
-          && strstr(progdata->items[i].name, itemname))
-      {
-            item = (item == NO_ITEM ? i : AMBIGUOUS_ITEM);
-      }
+            && strstr(progdata->items[i].name, itemname))
+        {
+            item = item == NO_ITEM ? i : AMBIGUOUS_ITEM;
+        }
 
     return item;
 }
