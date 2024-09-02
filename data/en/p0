@@ -1,0 +1,23 @@
+east
+west
+north
+south
+up
+down
+You can go 
+ and 
+You are %s._
+It's pitch black and you can't see your hand in front of your face._
+You see 
+You see 
+Around you, you see the smoldering remains of what used to be a forest.
+yYnN
+Press 1 for a new game, 2 for a saved game: 
+Error while reading status.__You'll start a new game. 
+Press a key to start...
+__Do you want to save your current status? 
+Error while saving status.
+__Couldn't open the save file for writing. Would you like to try again? 
+__Status hasn't been saved!_
+ with 
+**** Mission code: R136 ****

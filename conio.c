@@ -24,7 +24,6 @@ int wherey()
     return y;
 }
 
-
 void do_print_centered(win, text)
 WINDOW *win;
 char *text;

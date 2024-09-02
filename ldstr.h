@@ -21,4 +21,3 @@
 #define TITLE                   22
 
 #define Str(id)             progdata->strings[id]
-#define IsConfirmed()       (tolower(agetchar(Str(YESNO))) == Str(YESNO)[0])

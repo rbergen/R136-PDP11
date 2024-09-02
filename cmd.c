@@ -77,6 +77,22 @@ int FindLayingItemNum();
 #define ITEM_NOT_HERE           7
 #define YOU_HAVE_NO             8
 
+bool IsConfirmed(progdata)
+Progdata *progdata;
+{
+    char ch;
+
+    ch = agetchar(Str(YESNO));
+
+    if (isupper(ch))
+        ch = tolower(ch);
+
+    /* Make sure the character we got remains on screen */
+    putch(ch);
+
+    return ch == Str(YESNO)[0];
+}
+
 bool DoAction(progdata)
 Progdata *progdata;
 {
@@ -115,7 +131,10 @@ Progdata *progdata;
         {
             cputs("\r> ");
             strinp(" abcdefghijklmnopqrstuvwxyz", inpstr, wherex(), wherey(), -1, 0, 0);
-            putch('\r');
+            /* This is a hacky way to ensure the input the user entered is not deleted
+               if the parsing succeeds. */ 
+            gotoxy(67, cury);
+
             ParseInput(progdata, inpstr, &parsedata);
         }
         while (parsedata.error);
@@ -150,7 +169,7 @@ Progdata *progdata;
                 if (progdata->status.paperpos == 6)
                     progdata->living[PAPIER].status = 1;
             }
-            break;
+            return TRUE;
 
         case GEBRUIK:
             DoGebruik(progdata, &parsedata);
@@ -178,7 +197,7 @@ Progdata *progdata;
 
         case EINDE:
             cputs(GetSingleLineText('c', COMMAND_LINE_TEXTS, WANT_TO_LET_EARTH_DIE, TRUE));
-            if (IsConfirmed())
+            if (IsConfirmed(progdata))
                 return FALSE;
 
             cputs(GetSingleLineText('c', COMMAND_LINE_TEXTS, GOOD_DECISION, TRUE));
@@ -363,7 +382,7 @@ Progdata *progdata;
             break;
         
         cputs(texts[WANT_TO_STRIKE_AGAIN]);
-        if (!IsConfirmed())
+        if (!IsConfirmed(progdata))
         {
             putch('\n');
             break;

@@ -1,0 +1,9 @@
+no command entered
+invalid command entered
+the abbreviation "%s" is ambiguous
+syntax: combine <object> and/with <object>
+syntax: pickup <object>
+syntax: %s <object>
+you can't combine an object with itself
+you don't see any "%s" that you can pick up
+you don't have any "%s"

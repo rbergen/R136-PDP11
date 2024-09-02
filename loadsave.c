@@ -21,16 +21,17 @@ Progdata *progdata;
     char *fpath = DATA_FILE;
 
     cputs(Str(WANT_TO_SAVE_GAME));
-    if (tolower(agetchar(Str(YESNO))) != Str(YESNO)[0])
+    if (!IsConfirmed(progdata))
     {
         putch('\n');
+        unlink(fpath);
         return;
     }
 
     while ((fp = fopen(fpath, "w")) == NULL)
     {
         cputs(Str(COULDNT_OPEN_SAVE_FILE));
-        if (tolower(agetchar(Str(YESNO))) != Str(YESNO)[0])
+        if (!IsConfirmed(progdata))
         {
             cputs(Str(STATUS_NOT_SAVED));
             unlink(fpath);
@@ -127,6 +128,8 @@ Progdata *progdata;
 
    if (progdata->living[BOOM].status == 2)
         ApplySimmeringForest(progdata);
+
+    clrscr();
 
     return TRUE;
 }

@@ -1,3 +1,7 @@
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/dir.h>
 #include "r136.h"
 
 /* init.c */
@@ -18,42 +22,114 @@ bool DoAction();
 #define START_MESSAGE 0
 #define SPLASH_SCREEN 1
 
-int main()
+extern char *language;
+
+void PrintHelp(progname)
+char *progname;
 {
-	Progdata progdata;
+    DIR *d;
+    struct direct *entry;
+    struct stat st;
+    char langpath[256];
 
-	Initialize(&progdata);
+    printf("Usage: %s -l <language>\n", progname);
+    printf("Options:\n");
+    printf("  -l <language>  Set the language to use. Available languages (default is %s):\n", language);
 
-	PrintFile('s', SPLASH_SCREEN, TRUE);
-	
-	if (!LoadStatus(&progdata))
-		PrintFile('s', START_MESSAGE, FALSE);
+    d = opendir("data");
+    if (d) 
+    {
+        while (entry = readdir(d))
+        {
+            sprintf(langpath, "data/%s", entry->d_name);
 
-	while (TRUE)
-	{
-		RoomStatus(&progdata);
-		if (!BeastStatus(&progdata) || !DoAction(&progdata))
-			break;
-	}
+            if (!stat(langpath, &st) && S_ISDIR(st.st_mode) 
+                && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+            {
+                printf("                 * %s\n", entry->d_name);
+            }
+        }
 
-	SaveStatus(&progdata);
+        closedir(d);
+    }
 
-	getch();
+    printf("  -h, -?         Display this help\n\n");
+}
 
-	Deinitialize(&progdata);
+bool ParseArgs(argc, argv)
+int argc;
+char *argv[];
+{
+    struct stat st;
+    int opt;
+    char langpath[256];
 
-	return 0;
+    while ((opt = getopt(argc, argv, "l:h?")) != -1) 
+    {
+        if (opt == 'l')
+        {
+            sprintf(langpath, "data/%s", optarg);
+
+            if (!stat(langpath, &st) && S_ISDIR(st.st_mode)) 
+            {
+
+                language = (char *)malloc(strlen(optarg) + 1);
+                strcpy(language, optarg);
+                return TRUE;
+            }
+        }
+
+        PrintHelp(argv[0]);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+int main(argc, argv)
+int argc;
+char *argv[];
+{
+    Progdata progdata;
+
+    if (!ParseArgs(argc, argv))
+        return 0;
+
+    Initialize(&progdata);
+
+    PrintFile('s', SPLASH_SCREEN, TRUE);
+    
+    if (!LoadStatus(&progdata)) 
+    {
+        clrscr();
+        PrintFile('s', START_MESSAGE, FALSE);
+    }
+
+    while (TRUE)
+    {
+        RoomStatus(&progdata);
+        if (!BeastStatus(&progdata) || !DoAction(&progdata))
+            break;
+    }
+
+    SaveStatus(&progdata);
+
+    getch();
+
+    Deinitialize(&progdata);
+
+    return 0;
 }
 
 void ForceExit(progdata)
 Progdata *progdata;
 {
-	getch();
+    getch();
 
-	unlink(DATA_FILE);
+    unlink(DATA_FILE);
 
-	Deinitialize(&progdata);
+    Deinitialize(&progdata);
 
-	exit(0);
+    exit(0);
 }
 

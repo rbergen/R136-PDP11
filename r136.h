@@ -82,6 +82,9 @@ typedef struct
 
 extern char *language;
 
+/* cmd.c */
+bool IsConfirmed();
+
 /* strinp.c */
 int agetchar();
 int ascanf();

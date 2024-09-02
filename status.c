@@ -40,9 +40,7 @@ Progdata *progdata;
     wprintw(mainscr, progdata->strings[YOU_ARE_HERE], roomname);
 
     if (IsRoomDark(progdata->status.curroom) && !progdata->status.lamp)
-    {
         cputs(progdata->strings[TOO_DARK_TO_SEE]);
-    }
     else
     {
         if (progdata->rooms[progdata->status.curroom].descript)

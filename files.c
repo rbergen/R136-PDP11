@@ -112,8 +112,7 @@ char number, **name, **description;
 {
     int i;
     FILE *fp;
-    char filenumber;
-    char *semicolon;
+    char filenumber, *semicolon;
 
     filenumber = number / 20;    /* We keep info for 20 rooms in each file */
     number %= 20;
@@ -145,25 +144,32 @@ int count;
 char letter, number;
 bool add_newlines;
 {
-    int i;
+    int i, string_length, lines_read;
     FILE *fp;
     char line[100];
 
-    fp = OpenDataFile('p', 0);
+    fp = OpenDataFile(letter, number);
     if (fp == NULL) 
         return;
 
     for (i = 0; i < count && fgets(line, 100, fp) != NULL; i++)
     {
-        string_array[i] = (char *)malloc(strlen(line) + 1);
-        strcpy(string_array[i], line);
-        if (add_newlines)
-            put_newlines(string_array[i]);
+        string_length = strlen(line);
+        string_array[i] = (char *)malloc(string_length);
+        /* We don't want the newline at the end of the string */
+        memcpy(string_array[i], line, string_length - 1);
+        string_array[i][string_length - 1] = 0;
     }
+
+    lines_read = i;
+
+    if (add_newlines) 
+        for (i = 0; i < count; i++)
+            put_newlines(string_array[i]);
 
     fclose(fp);
 
-    return i;
+    return lines_read;
 }
 
 void PrintFile(letter, number, centered)

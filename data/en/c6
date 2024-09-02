@@ -1,0 +1,18 @@
+--- HELP ---
+
+Commands: 
+  east
+  west
+  north
+  south
+  ascend
+  descend
+  use <object>
+  combine <object> and/with <object>
+  pickup <object>
+  lay <object>
+  inspect <object>
+  bide
+  finish
+  report
+  help

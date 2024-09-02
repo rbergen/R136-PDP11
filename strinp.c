@@ -165,6 +165,7 @@ va_dcl
 */
 int vsscanf(str, fmt, args)
 char *str, *fmt;
+va_list args;
 {
     FILE _strbuf;
 
@@ -174,7 +175,7 @@ char *str, *fmt;
     while (*str++)
         _strbuf._cnt++;
     _strbuf._bufsiz = _strbuf._cnt;
-    return _doscan(&_strbuf, fmt,  &args);
+    return _doscan(&_strbuf, fmt, args);
 }
 
 #define KEY_UP          -1
@@ -265,10 +266,36 @@ int getkeypress()
     if (ch == 27)
         ch = HandleEscapeKey();
 
+    if (ch == 3) /* Ctrl-C */
+    {
+        cputs("Bye!\n");
+        wrefresh(mainscr);
+        exit(0);
+    }
+
     /* Reset terminal to normal mode */
     ioctl(STDIN_FILENO, TIOCSETP, &old_term);
 
     return ch;
+}
+
+void memshift(dest, src, len)
+char *dest, *src;
+int len;
+{
+    if (dest == src || len == 0)
+        return;
+
+    if (dest < src)
+        while (len--)
+            *dest++ = *src++;
+    else
+    {
+        dest += len;
+        src += len;
+        while (len--)
+            *--dest = *--src;
+    }
 }
 
 /*=========================================================================*
@@ -321,8 +348,7 @@ int strinp (allowed, input, inpx, inpy, caps, esc, curm)
 char *allowed, *input;
 int inpx, inpy, caps, esc, curm;
 {
-    int ins = 1, ilen, ipos = 0, toret = 0, curx, cury;
-    int ichar;
+    int ins = 1, ilen, ipos = 0, toret = 0, curx, cury, ichar;
     bool refresh_pending = TRUE;
 
     ilen = strlen(input) - 1;
@@ -393,7 +419,7 @@ int inpx, inpy, caps, esc, curm;
             break;
 
         case KEY_DELETE:
-            memmove(input + ipos, input + ipos + 1, ilen - ipos);
+            memshift(input + ipos, input + ipos + 1, ilen - ipos);
             input[ilen] = ' ';
             cputs(input + ipos);
             refresh_pending = TRUE;
@@ -402,7 +428,7 @@ int inpx, inpy, caps, esc, curm;
         case 127: /* Backspace */
             if (ipos)
             {  
-                memmove(input + ipos - 1, input + ipos, ilen - ipos + 1);
+                memshift(input + ipos - 1, input + ipos, ilen - ipos + 1);
                 input[ilen] = ' ';
                 gotoxy(inpx + --ipos, inpy);
                 cputs(input + ipos);
@@ -418,7 +444,10 @@ int inpx, inpy, caps, esc, curm;
             if (curm) toret = L_STAB;
             break;
     
+        /* I'm adding both because I *know* I've seen both, even though now it
+           always seems to be 13... */
         case 10: /* Enter */
+        case 13:
             toret = L_ENTER;
             break;
 
@@ -430,18 +459,19 @@ int inpx, inpy, caps, esc, curm;
             if (ichar < 0)
                 break;
 
-            if (caps > 0)
+            if (caps > 0 && islower(ichar))
                 ichar = toupper(ichar);
-            else if (caps < 0)
+            else if (caps < 0 && isupper(ichar))
                 ichar = tolower(ichar);
 
             if (strchr(allowed, ichar)) 
             {
                 putch(ichar);
+                wrefresh(mainscr);
 
                 if (ins) 
                 {
-                    memmove(input + ipos + 1, input + ipos, ilen - ipos);
+                    memshift(input + ipos + 1, input + ipos, ilen - ipos);
                     cputs(input + ipos + 1);
                 }
 
@@ -457,6 +487,5 @@ int inpx, inpy, caps, esc, curm;
     }
     while (!toret);
 
-    gotoxy(curx, cury);
     return toret;
 }

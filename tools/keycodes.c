@@ -119,7 +119,7 @@ int main()
             break;
         }
 
-        printw("You pressed: %d = %c\n", input, input == 27 || input < 0 ? '_' : input);
+        printw("You pressed: %d = %c\n", input, input == 27 || input == 13 || input < 0 ? '_' : input);
         refresh();
     }
 

@@ -76,15 +76,15 @@ Progdata *progdata;
     initscr();
     erase();    /* Not clrscr(), because we mean the whole window! */
 
-    /* Print the title header and keep it from scrolling away */
-    PrintHeader(progdata->strings[TITLE]);
-    mainscr = subwin(0, 0, 2, 0);
-    scrollok(mainscr, TRUE);
-    refresh();
-
     /* LoadStrings heap-allocates the strings it loads! */
     LoadStrings(progdata->strings, PRELOADED_STRING_COUNT, 'p', 0, TRUE);
     LoadStrings(progdata->commands, COMMAND_COUNT, 'c', 0, FALSE);
+
+    /* Print the title header and keep it from scrolling away */
+    PrintHeader(progdata->strings[TITLE]);
+    refresh();
+    mainscr = subwin(stdscr, 0, 0, 2, 0);
+    scrollok(mainscr, TRUE);
 
     /* Set up our own data structures */
     progdata->paperroute[0] = 69;
