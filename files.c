@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <strings.h>
+#include "lib.h"
 #include "conio.h"
 
 char *language = "nl";
@@ -28,15 +29,6 @@ char *str, find, replace;
         *current_pos = replace;
         current_pos = strchr(current_pos,find);
     }
-
-    return str;
-}
-
-char* defuzzle(str)
-char *str;
-{
-    for (; *str && *str != '\n'; str++)
-        *str = 158 - *str;
 
     return str;
 }
@@ -83,9 +75,9 @@ char id, status;
     }
 
     /* Read and print the status text for our status, until we hit the next status marker */
-    while (fgets(line, 100, fp) != NULL && (strlen(line) < 2 || (line[0] != 'K' || line[1] != 'J'))) 
+    while (fgets(line, 100, fp) && (strlen(line) < 2 || (line[0] != 'K' || line[1] != 'J'))) 
     {
-        defuzzle(line);
+        fuzzle(line);
         cputs(line);
         printed = TRUE;
     }
@@ -108,12 +100,12 @@ bool add_newlines;
     if (fp == NULL)
         return NULL;
 
-    for (i = 0; i <= line && fgets(single_line_text, SINGLE_LINE_LENGTH, fp) != NULL; i++);
+    for (i = 0; i <= line && fgets(single_line_text, SINGLE_LINE_LENGTH, fp); i++);
 
     fclose(fp);
 
     single_line_text[strlen(single_line_text) - 1] = 0;
-    defuzzle(single_line_text);
+    fuzzle(single_line_text);
 
     return add_newlines ? put_newlines(single_line_text) : single_line_text;
 }
@@ -130,11 +122,11 @@ char number, **name, **description;
 
     fp = OpenDataFile('r', filenumber);
 
-    for (i = 0; i <= number && fgets(room_text, ROOM_TEXT_LENGTH, fp) != NULL; i++);
+    for (i = 0; i <= number && fgets(room_text, ROOM_TEXT_LENGTH, fp); i++);
 
     fclose(fp);
 
-    defuzzle(room_text);
+    fuzzle(room_text);
 
     *name = room_text;
 
@@ -165,14 +157,14 @@ bool add_newlines;
     if (fp == NULL) 
         return;
 
-    for (i = 0; i < count && fgets(line, 100, fp) != NULL; i++)
+    for (i = 0; i < count && fgets(line, 100, fp); i++)
     {
         string_length = strlen(line);
         string_array[i] = (char *)malloc(string_length);
         /* We don't want the newline at the end of the string */
         memcpy(string_array[i], line, string_length - 1);
         string_array[i][string_length - 1] = 0;
-        defuzzle(string_array[i]);
+        fuzzle(string_array[i]);
     }
 
     lines_read = i;
@@ -198,9 +190,9 @@ bool centered;
     if (fp == NULL)
         return;
 
-    while (fgets(line, 100, fp) != NULL)
+    while (fgets(line, 100, fp))
     {
-        defuzzle(line);
+        fuzzle(line);
         if (line[0] == 0); /* Ignore the last line without the newline*/
         else if (line[0] == '\n')
             putch('\n');

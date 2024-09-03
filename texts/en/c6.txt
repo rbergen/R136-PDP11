@@ -16,3 +16,5 @@ Commands:
   finish
   report
   help
+
+Commands and names of objects may be abbreviated.

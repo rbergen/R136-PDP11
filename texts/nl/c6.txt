@@ -16,3 +16,5 @@ Commando's:
    einde
    status
    help
+
+Commando's en namen van voorwerpen mogen worden afgekort.
