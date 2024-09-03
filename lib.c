@@ -10,7 +10,7 @@
  * In 2.11BSD K&R C on the PDP-11, vsscanf() is missing. This version is implemented exactly the
  * way I think it would have been based on the implementation of scanf, fscanf and sscanf in stdio.
  * As is the case in the stdio-supplied sscanf, the actual work is done by a library-internal
- * _doscan() function. Its first argument is pointer to a FILE structure, in which the string to 
+ * _doscan() function. Its first argument is a pointer to a FILE structure, in which the string to 
  * read from is loaded.
  */
 int vsscanf(str, fmt, args)
