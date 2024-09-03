@@ -32,6 +32,15 @@ char *str, find, replace;
     return str;
 }
 
+char* defuzzle(str)
+char *str;
+{
+    for (; *str && *str != '\n'; str++)
+        *str = 158 - *str;
+
+    return str;
+}
+
 #define put_newlines(str) replace_char((str), '_', '\n')
 
 FILE *OpenDataFile(letter, number)
@@ -64,7 +73,7 @@ char id, status;
     /* Skip lines until we find the file section for our status */
     do 
         result = fgets(line, 100, fp);
-    while (result != NULL && (strlen(line) < 3 || (line[0] != 'S' || line[1] != 'T' || line[2] != status + '0')));
+    while (result != NULL && (strlen(line) < 3 || (line[0] != 'K' || line[1] != 'J' || line[2] != 'n' - status)));
 
     /* This (EOF) can happen if the text file contains no text for our status */
     if (result == NULL)
@@ -74,8 +83,9 @@ char id, status;
     }
 
     /* Read and print the status text for our status, until we hit the next status marker */
-    while (fgets(line, 100, fp) != NULL && (strlen(line) < 2 || (line[0] != 'S' || line[1] != 'T'))) 
+    while (fgets(line, 100, fp) != NULL && (strlen(line) < 2 || (line[0] != 'K' || line[1] != 'J'))) 
     {
+        defuzzle(line);
         cputs(line);
         printed = TRUE;
     }
@@ -103,6 +113,7 @@ bool add_newlines;
     fclose(fp);
 
     single_line_text[strlen(single_line_text) - 1] = 0;
+    defuzzle(single_line_text);
 
     return add_newlines ? put_newlines(single_line_text) : single_line_text;
 }
@@ -122,6 +133,8 @@ char number, **name, **description;
     for (i = 0; i <= number && fgets(room_text, ROOM_TEXT_LENGTH, fp) != NULL; i++);
 
     fclose(fp);
+
+    defuzzle(room_text);
 
     *name = room_text;
 
@@ -159,6 +172,7 @@ bool add_newlines;
         /* We don't want the newline at the end of the string */
         memcpy(string_array[i], line, string_length - 1);
         string_array[i][string_length - 1] = 0;
+        defuzzle(string_array[i]);
     }
 
     lines_read = i;
@@ -186,6 +200,7 @@ bool centered;
 
     while (fgets(line, 100, fp) != NULL)
     {
+        defuzzle(line);
         if (line[0] == 0); /* Ignore the last line without the newline*/
         else if (line[0] == '\n')
             putch('\n');

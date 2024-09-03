@@ -1,16 +1,16 @@
 *** R136 ***
 
-Ontwerp:
+Design:
 Peter Wouda
 Rutger van Bergen
 
 Code:
 Rutger van Bergen
 
-Testen:
+Testing:
 Machiel Keizer
 Peter Wouda
 Rutger van Bergen
 
-Versie 2.4, (C) 1998, 2024 R.I.P.
+Version 2.5, (C) 1998, 2024 R.I.P.
 

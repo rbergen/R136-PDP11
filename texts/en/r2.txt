@@ -1,0 +1,20 @@
+in the garbage cave;There is large pile of rotting food remains in this cave. The stench is almost_unbearable.
+in the echo cave;All sounds you make echo back from the walls.
+in the secret cave;On the floor of the cave there's a wide range of unfamiliar and mysterious_objects.
+in the food cave;It smells like this probably was a kitchen at some point...
+in the cave of the gnu;Scattered around are skeletons of creatures that fell prey to the gnu before.
+in an empty cave
+in the eye cave;From all angles you are looked at by red, blood-shot eyes that precisely follow your actions.
+in the rock cave;You see sharp rock edges everywhere. Brown crusts are attached to some of_them.
+in the emptiness
+at the sandbank;On the ground you see strange patterns, made out of different types of sand.
+in the torture cave;Under the vague shimmer of the torture fires, you can just see a thumbscrew_and some pointy objects that still have some blood attached to them.
+in an empty cave
+in the safe cave;This is the only cave in which you feel some safety.
+in the narrow cleft;You're surrounded by high rock walls at all sides. You only see an opening at_the western side.
+in the oil cave;An enormous heat spreads from the south that is only just bearable in this_cave.
+in an empty cave
+in a stairwell cave;There is a large, circular stairwell that is made out of stone. It looks like_it leads to other levels.
+in the spider cave;It's teeming with tarantulas, here. You hear crunching with every step you_take, and you feel them crawling up your legs.
+in the talking cave
+at the lava pit

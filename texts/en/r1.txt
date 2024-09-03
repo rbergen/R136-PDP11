@@ -1,0 +1,20 @@
+in the slime cave;The walls of the cave are covered in a snotty slime.
+in the black cave;You can't see your hand in front of your face.
+in the drugs cave
+in the horny cave;Affixed to the wall are yellow, torn Playboy posters.
+in the straitjacket cave;There's a straitjacket hanging from the ceiling, with a mutilated body in it.
+in a neglected cave
+in an empty cave
+in the main cave;There is a battery of mysterious equipment, here.
+in the hieroglyphs cave;There are symbols on the walls that you can't make sense of.
+in the stench cave;The filthy stench that lingers here reminds you of the heavy smell of a cesspool.
+in a disconsolate cave
+in the fluorescent cave;The cave is weakly lit by a light source that hangs high at the ceiling.
+in a small cave
+in the ice cave;In this cave everything looks like it is made out of ice. It gives you the_shivers.
+in the cactus cave;You're surrounded by poisonous cactuses that are present in this cave.
+in the stalagmite cave;You see a railing of stalagmites.
+in the storm cave;A hard wind blows through this cave that makes you hold on to one of the walls.
+in the mist cave
+in a stairwell cave;There is a large, circular stairwell that is made out of stone. It looks like_it leads to other levels.
+in the tentacle cave;Large tentacles come from all directions. They scan your body and leave green_traces on your skin.

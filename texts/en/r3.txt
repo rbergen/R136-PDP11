@@ -1,0 +1,20 @@
+in the scooby cave;Weird noises come from all directions, as if in a mental institution.
+in the radioactive cave;Due to the high level of radioactivity, this cave is dimly lit.
+in the second t cave
+in the first t cave
+in the first e cave;This caves houses the stone statue of an old creature that is unfamiliar to_you.
+in the cave of death;The name of this cave speaks for itself...
+in the r cave
+in the second e cave
+in a stairwell cave;There is a large, circular stairwell that is made out of stone. It looks like_it leads to other levels.
+in the L cave
+in the damnation cave;An almost suffocating atmosphere dominates this cave. You don't feel_comfortable here.
+in the vacuum cave
+in the red cave
+in the neon cave;This cave is brightly coloured. There are patterns that remind you of black magic.
+in the blood cave;There's a skeleton of a large beast on the ground, and some of its guts are next to it.
+in the bat cave;Bats are fluttering everywhere in this cave, looking for their prey.
+in the snake cave;You hear the sound of a rattle-snake. At the northern end there's a drawing of_a skull, signifying danger.
+in the lobe cave
+in the slippery cave;You nearly slip over the soap-like goo that is everywhere in this cave._Somewhere in the slippery mass, a pole sticks up that has an arrow attached to_it, which points east.
+in the teleport cave
