@@ -96,7 +96,7 @@ char *argv[];
         return 0;
 
     Initialize(&progdata);
-    printf("Initialized\n");    
+
     PrintFile('s', SPLASH_SCREEN, TRUE);
     
     if (!LoadStatus(&progdata)) 
