@@ -35,21 +35,10 @@ va_list args;
 int _handle_escape_key()
 {
     int ch;
-    struct timeval tv;
-    struct fd_set readfds;
 
-    /* Set up the timeout */
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = TIMEOUT;
+    ch = getchar();
 
-    /* Check if more input is available within the timeout */
-    ch = select(1, &readfds, NULL, NULL, &tv);
-
-    if (!ch) return KEY_ESCAPE;
-
-    switch (getchar())
+    switch(ch)
     {
     case '[':
         ch = getchar();
@@ -78,13 +67,12 @@ int _handle_escape_key()
         }
         break;
 
-    case 'O': /* We can get this after an Escape, but we don't handle these. 
-                 So, we pull the next character that inevitably follows and move on.*/
-        getchar();
-        break;
+      case 27:
+        return KEY_ESCAPE;
     }
 
-    return KEY_UNHANDLED;
+    ungetc(ch, stdin);
+    return KEY_ESCAPE;
 }
 
 /*
