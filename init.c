@@ -42,9 +42,9 @@ char blocked[83][2] = {
     {72, NORTH}, {72, EAST}, {73, WEST}, {79, WEST},
     {74, SOUTH}, {75, NORTH}, {79, NORTH}};
 
-beginroom[LIVING_COUNT] = {
+char beginroom[LIVING_COUNT] = {
     2, 23, 25, 44, 50, 75, 45, 58, 17, 10, 4, 41, 32, 59, 71, 66, 3, 8, 18, 37, 79};
-killhits[LIVING_COUNT] = {
+char killhits[LIVING_COUNT] = {
     4, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 char itemroom[ITEM_COUNT] = {
@@ -65,28 +65,62 @@ bool SetItems();
 bool Initialize(progdata)
 Progdata *progdata;
 {
-    int i;
     struct timeval tv;
-    
+
     /* Initialize random number generator */
     gettimeofday(&tv, NULL);
     srandom((int)tv.tv_sec);
 
-    /* Initialize curses */
-    initscr();
+    /* Initialize curses. Note that this curses reports failure as ERR, which
+       is 0, so a failed call leaves us with a NULL stdscr. */
+    if (initscr() == NULL)
+    {
+        fprintf(stderr, "Could not initialize the terminal. Is TERM set correctly?\n");
+        return FALSE;
+    }
     erase();    /* Not clrscr(), because we mean the whole window! */
 
-    /* LoadStrings heap-allocates the strings it loads! */
-    LoadStrings(progdata->strings, PRELOADED_STRING_COUNT, 'p', 0, TRUE);
-    LoadStrings(progdata->commands, COMMAND_COUNT, 'c', 0, FALSE);
+    /* LoadStrings heap-allocates the strings it loads! Note that mainscr does
+       not exist yet, so a missing data file cannot be reported through it. */
+    if (LoadStrings(progdata->strings, PRELOADED_STRING_COUNT, 'p', 0, TRUE) < PRELOADED_STRING_COUNT
+        || LoadStrings(progdata->commands, COMMAND_COUNT, 'c', 0, FALSE) < COMMAND_COUNT)
+    {
+        endwin();
+        fprintf(stderr, "Could not read the game texts from data/%s.\n", language);
+        fprintf(stderr, "Run this game from the directory that holds the data directory.\n");
+        return FALSE;
+    }
 
     /* Print the title header and keep it from scrolling away */
     PrintHeader(progdata->strings[TITLE]);
     refresh();
     mainscr = subwin(stdscr, 0, 0, 2, 0);
+    if (mainscr == NULL)
+    {
+        endwin();
+        fprintf(stderr, "Could not create the game window.\n");
+        return FALSE;
+    }
     scrollok(mainscr, TRUE);
 
-    /* Set up our own data structures */
+    /* This heap-allocates the item names, so it is done only once */
+    if (!SetItems(progdata->items))
+    {
+        endwin();
+        fprintf(stderr, "Could not read the item names from data/%s.\n", language);
+        return FALSE;
+    }
+
+    return ResetGame(progdata);
+}
+
+/* Puts the game back in its starting state. Unlike Initialize() this allocates
+   nothing, so it is safe to call again after a failed load. */
+bool ResetGame(progdata)
+Progdata *progdata;
+{
+    int i;
+
     progdata->paperroute[0] = 69;
     progdata->paperroute[1] = 64;
     progdata->paperroute[2] = 63;
@@ -100,12 +134,16 @@ Progdata *progdata;
     progdata->status.lamp = FALSE;
     progdata->status.lamppoints = 60;
 
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < MAX_OWNED_ITEMS; i++)
         progdata->owneditems[i] = NO_ITEM;
 
-    return (SetRooms(progdata->rooms)
-            && SetLivings(progdata->living)
-            && SetItems(progdata->items));
+    for (i = 0; i < ITEM_COUNT; i++)
+    {
+        progdata->items[i].room = itemroom[i];
+        progdata->items[i].useableon = workon[i];
+    }
+
+    return SetRooms(progdata->rooms) && SetLivings(progdata->living);
 }
 
 /* Doomed are they who don't exit the program after calling this! */
@@ -124,9 +162,13 @@ Progdata *progdata;
     for (i = 0; i < ITEM_COUNT; i++)
         free(progdata->items[i].name);
 
-    /* Tear down curses */
+    /* Tear down curses. clearok() makes the refresh below clear the terminal
+       outright rather than only the parts curses believes are in use: it does
+       not necessarily know what is on the bottom line (see the note in
+       conio.h), and we would leave that line behind on the way out. */
     delwin(mainscr);
     erase();	/* Not clrscr(), because we mean the whole window! */
+    clearok(stdscr, TRUE);
     refresh();
     endwin();
 }
@@ -193,14 +235,16 @@ Item *items;
     char *itemnames[ITEM_COUNT];
 
     /* LoadStrings heap-allocates the strings it loads! */
-    LoadStrings(itemnames, ITEM_COUNT, 'i', 0, FALSE);
+    if (LoadStrings(itemnames, ITEM_COUNT, 'i', 0, FALSE) < ITEM_COUNT)
+    {
+        for (i = 0; i < ITEM_COUNT; i++)
+            free(itemnames[i]);
+
+        return FALSE;
+    }
 
     for (i = 0; i < ITEM_COUNT; i++)
-    {
         items[i].name = itemnames[i];
-        items[i].room = itemroom[i];
-        items[i].useableon = workon[i];
-    }
 
     return TRUE;
 }

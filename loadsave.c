@@ -83,7 +83,7 @@ char *fpath;
     cputs(Str(PRESS_ANY_KEY));
     getch();
     cputs("\n\n");
-    Initialize(progdata);
+    ResetGame(progdata);
     return FALSE;
 }
 
@@ -112,17 +112,17 @@ Progdata *progdata;
 
     for (i = 0; i < ITEM_COUNT; i++)
         if (fread(&(progdata->items[i].room), sizeof(char), 1, fp) < 1)
-            ReportLoadFailure(progdata, fp, fpath);
+            return ReportLoadFailure(progdata, fp, fpath);
     for (i = 0; i < ROOM_COUNT; i++)
         if (fread(progdata->rooms[i].connect, sizeof(char) * 6, 1, fp) < 1)
-            ReportLoadFailure(progdata, fp, fpath);
+            return ReportLoadFailure(progdata, fp, fpath);
     for (i = 0; i < LIVING_COUNT; i++)
         if (fread(&(progdata->living[i]), sizeof(Living), 1, fp) < 1)
-            ReportLoadFailure(progdata, fp, fpath);
+            return ReportLoadFailure(progdata, fp, fpath);
     if (fread(progdata->owneditems, sizeof(char), 10, fp) < 10)
-        ReportLoadFailure(progdata, fp, fpath);
+        return ReportLoadFailure(progdata, fp, fpath);
     if (fread(&(progdata->status), sizeof(Status), 1, fp) < 1)
-        ReportLoadFailure(progdata, fp, fpath);
+        return ReportLoadFailure(progdata, fp, fpath);
     cputs("\n");
     fclose(fp);
 

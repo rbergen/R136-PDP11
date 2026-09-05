@@ -4,10 +4,6 @@
 #include <sys/dir.h>
 #include "r136.h"
 
-/* init.c */
-void Initialize();
-void Deinitialize();
-
 /* loadsave.c */
 void SaveStatus();
 char LoadStatus();
@@ -41,6 +37,9 @@ char *progname;
     {
         while (entry = readdir(d))
         {
+            if (strlen(entry->d_name) >= sizeof(langpath) - 6)
+                continue;
+
             sprintf(langpath, "data/%s", entry->d_name);
 
             if (!stat(langpath, &st) && S_ISDIR(st.st_mode) 
@@ -66,14 +65,16 @@ char *argv[];
 
     while ((opt = getopt(argc, argv, "l:h?")) != -1) 
     {
-        if (opt == 'l')
+        if (opt == 'l' && strlen(optarg) < sizeof(langpath) - 6)
         {
             sprintf(langpath, "data/%s", optarg);
 
-            if (!stat(langpath, &st) && S_ISDIR(st.st_mode)) 
+            if (!stat(langpath, &st) && S_ISDIR(st.st_mode))
             {
-
                 language = (char *)malloc(strlen(optarg) + 1);
+                if (language == NULL)
+                    return FALSE;
+
                 strcpy(language, optarg);
                 return TRUE;
             }
@@ -95,7 +96,8 @@ char *argv[];
     if (!ParseArgs(argc, argv))
         return 0;
 
-    Initialize(&progdata);
+    if (!Initialize(&progdata))
+        return 1;
 
     PrintFile('s', SPLASH_SCREEN, TRUE);
     
@@ -128,7 +130,7 @@ Progdata *progdata;
 
     unlink(DATA_FILE);
 
-    Deinitialize(&progdata);
+    Deinitialize(progdata);
 
     exit(0);
 }

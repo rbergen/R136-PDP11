@@ -2,7 +2,7 @@
 echo "*** Building r136 and supporting tools"
 echo
 cc -o r136 *.c -lcurses -ltermlib
-cc -o tools/gendata tools/gendata.c lib.c
+cc -o tools/gendata tools/gendata.c lib.c -lcurses -ltermlib
 
 echo
 echo "*** Removing and generating data files"

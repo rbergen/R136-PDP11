@@ -1,3 +1,4 @@
+#include <curses.h>
 #include <sgtty.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -95,28 +96,46 @@ int _handle_escape_key()
 int getkeypress()
 {
     int ch;
+    int israw;
     struct sgttyb old_term, new_term;
 
     /* Set up terminal for non-blocking input */
-    ioctl(STDIN_FILENO, TIOCGETP, &old_term);
-    new_term = old_term;
-    new_term.sg_flags |= RAW;
-    new_term.sg_flags &= ~ECHO;
-    ioctl(STDIN_FILENO, TIOCSETP, &new_term);
+    israw = (ioctl(STDIN_FILENO, TIOCGETP, &old_term) == 0);
+    if (israw)
+    {
+        new_term = old_term;
+        new_term.sg_flags |= RAW;
+        new_term.sg_flags &= ~ECHO;
+        ioctl(STDIN_FILENO, TIOCSETP, &new_term);
+    }
 
     ch = getchar();
+
+    /* Check for end of input before the escape handling below, because that
+       returns negative key codes of its own. */
+    if (ch == EOF)
+    {
+        if (israw)
+            ioctl(STDIN_FILENO, TIOCSETP, &old_term);
+
+        endwin();
+        exit(0);
+    }
 
     if (ch == 27)
         ch = _handle_escape_key();
 
+    /* Reset terminal to normal mode. This has to happen before we can exit, or
+       we leave the terminal in raw mode and the shell unusable. */
+    if (israw)
+        ioctl(STDIN_FILENO, TIOCSETP, &old_term);
+
     if (ch == 3) /* Ctrl-C */
     {
+        endwin();
         puts("Bye!");
         exit(0);
     }
-
-    /* Reset terminal to normal mode */
-    ioctl(STDIN_FILENO, TIOCSETP, &old_term);
 
     return ch;
 }

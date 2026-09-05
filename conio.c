@@ -3,6 +3,9 @@
    version of this game to the PDP-11 easier. */
 
 #include <curses.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 WINDOW *mainscr;
 
@@ -29,15 +32,44 @@ WINDOW *win;
 char *text;
 {
     int numspaces;
-    char* spaces;
+    int textlength;
+    char *spaces;
 
-    numspaces = (COLS - strlen(text)) / 2;
-    spaces = (char *)malloc(numspaces + 1);
+    if (win == NULL || text == NULL)
+        return;
 
-    memset(spaces, ' ', numspaces);
-    spaces[numspaces] = 0;
-    waddstr(win, spaces);
-    free(spaces);
+    /* Keep this subtraction signed: a line that is wider than the screen must
+       not turn into a huge number of spaces. */
+    textlength = (int)strlen(text);
+    numspaces = (COLS - textlength) / 2;
+
+    if (numspaces > 0)
+    {
+        spaces = (char *)malloc(numspaces + 1);
+        if (spaces != NULL)
+        {
+            memset(spaces, ' ', numspaces);
+            spaces[numspaces] = 0;
+            waddstr(win, spaces);
+            free(spaces);
+        }
+    }
 
     waddstr(win, text);
+}
+
+/* Reports a message to whatever we have available. During initialization that
+   may be neither window, so fall back to stderr rather than dereferencing NULL. */
+void PrintError(message)
+char *message;
+{
+    if (mainscr != NULL)
+        waddstr(mainscr, message);
+    else if (stdscr != NULL)
+    {
+        waddstr(stdscr, message);
+        wrefresh(stdscr);
+    }
+    else
+        fprintf(stderr, "%s", message);
 }
