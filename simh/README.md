@@ -53,7 +53,7 @@ Everything below assumes you are logged in as `user`, whose shell is `tcsh`.
 | `setup.sh` | Installs the simulator and fetches the disk image, if you don't have them |
 | `run.sh` | Rebuilds the tape image when needed and starts the machine |
 | `r136.ini` | SIMH configuration: an 11/70, the system disk, and a tape drive |
-| `mktape.py` | Packs R136 into a tape image that 2.11BSD's `tar` can read |
+| `mktape.py` | Packs the game's sources into a tape image that 2.11BSD's `tar` can read |
 | `common.sh` | Paths and helpers the two scripts share; not run on its own |
 
 The disk image and the tape image are both generated, and are ignored by git.
@@ -78,13 +78,17 @@ leave as a hole. If you already own a PiDP-11 you have this image already, in
 this. A tape is the path of least resistance: `mktape.py` writes a tar archive wrapped in SIMH's
 `.tap` container, and `r136.ini` attaches it as `/dev/rmt0`.
 
-`run.sh` does this for you. It rebuilds the tape whenever any file in R136 is newer than the tape
-image, and tells you which file triggered it:
+What goes on it is what the PDP-11 needs to build and play the game: the sources, `texts`, `tools`
+and `build.csh`. This directory stays behind, along with the top level `README.md`, since both are
+about getting to the PDP-11 rather than anything you do once you are there.
+
+`run.sh` builds the tape for you. It rebuilds whenever one of those files is newer than the tape
+image, and tells you which one triggered it:
 
 ```
 *** Building the tape image, because init.c is newer
-Wrote .../r136.tap: 260012 bytes, 500 records of 512 bytes
-The tar it holds is 256000 bytes; "sum" on 2.11BSD should report: 37440 250
+Wrote .../r136.tap: 239212 bytes, 460 records of 512 bytes
+The tar it holds is 235520 bytes; "sum" on 2.11BSD should report: 15274 230
 ```
 
 Keep that last number: it is what `sum` should say on the other side. You can also invoke

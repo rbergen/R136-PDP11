@@ -29,13 +29,15 @@ if simulator_is_running; then
     exit 1
 fi
 
-# Work out whether the tape still reflects the sources. Everything git ignores
-# is skipped, or the tape would always look out of date compared to itself.
+# Work out whether the tape still reflects the sources. This skips everything
+# mktape.py leaves out, or editing something that never reaches the PDP-11 would
+# send us off rebuilding a tape that would come out identical.
 if [ ! -f "$tape_image" ]; then
     tape_reason="it doesn't exist yet"
 else
     changed=$(find "$project_directory" \
                    \( -name .git -o -name data -o -name __pycache__ \
+                      -o -name simh -o -name README.md \
                       -o -name '*.tap' -o -name '*.tar' -o -name '*.o' \
                       -o -name '*.dsk' -o -name '*.xz' -o -name '*.gz' \) -prune \
                    -o -type f -newer "$tape_image" -print 2>/dev/null | head -1)
