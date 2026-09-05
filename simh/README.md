@@ -53,7 +53,7 @@ Everything below assumes you are logged in as `user`, whose shell is `tcsh`.
 | `setup.sh` | Installs the simulator and fetches the disk image, if you don't have them |
 | `run.sh` | Rebuilds the tape image when needed and starts the machine |
 | `r136.ini` | SIMH configuration: an 11/70, the system disk, and a tape drive |
-| `mktape.py` | Packs the game's sources into a tape image that 2.11BSD's `tar` can read |
+| `mktape.py` | Packs the game's sources into a tape image that 2.11BSD's `tar` can read, and decides when that is needed |
 | `common.sh` | Paths and helpers the two scripts share; not run on its own |
 
 The disk image and the tape image are both generated, and are ignored by git.
@@ -82,14 +82,18 @@ What goes on it is what the PDP-11 needs to build and play the game: the sources
 and `build.csh`. This directory stays behind, along with the top level `README.md`, since both are
 about getting to the PDP-11 rather than anything you do once you are there.
 
-`run.sh` builds the tape for you. It rebuilds whenever one of those files is newer than the tape
-image, and tells you which one triggered it:
+`run.sh` builds the tape for you, by calling `mktape.py --if-needed`. That rebuilds only when one
+of the files that belongs on the tape has changed, and says which one it was:
 
 ```
-*** Building the tape image, because init.c is newer
+Building .../r136.tap, because init.c is newer
 Wrote .../r136.tap: 239212 bytes, 460 records of 512 bytes
 The tar it holds is 235520 bytes; "sum" on 2.11BSD should report: 15274 230
 ```
+
+Otherwise it says `r136.tap is up to date.` and gets out of the way. The decision lives in
+`mktape.py` rather than in `run.sh` because `mktape.py` is what knows which files belong on the
+tape, and a second copy of that list would only drift.
 
 Keep that last number: it is what `sum` should say on the other side. You can also invoke
 `./mktape.py` yourself; `--help` lists what it takes.
