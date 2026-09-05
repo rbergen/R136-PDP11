@@ -1,2 +1,9 @@
 data
 .vscode
+simh/*.dsk
+simh/*.dsk.xz
+simh/*.tap
+simh/*.tar
+
+__pycache__/
+simh/.simulator.pid

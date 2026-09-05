@@ -15,9 +15,28 @@ After "unexpectedly" improving the original MS-DOS version of the game (the resu
 
 "Discovering the object of the game **is** the object of the game."
 
+## Running without a PDP-11
+
+Short on PDP-11s? The [SIMH](https://github.com/open-simh/simh) emulator runs 2.11BSD on an
+ordinary PC quite happily, and R136 with it. Everything you need is in the [`simh`](simh/)
+directory:
+
+```shell
+cd simh
+./setup.sh
+./run.sh
+```
+
+`setup.sh` installs the simulator and downloads a 2.11BSD disk image, skipping whichever of the
+two you already have. `run.sh` packs R136 onto a tape image and starts the machine.
+
+[simh/README.md](simh/README.md) covers the rest: copying R136 across and building it there,
+creating a user account, and shutting the machine down without losing your work.
+
 ## Building the game
 
-Clone the repo to your local PDP-11 running 2.11BSD.
+Clone the repo to your local PDP-11 running 2.11BSD, or see [above](#running-without-a-pdp-11) if
+you would rather emulate one.
 
 On the PDP-11, make sure you're running the (t)csh shell, and execute the following command from the project directory:
 
