@@ -20,6 +20,10 @@ Note the record size: SIMH and the 2.11BSD tape driver will happily accept
 10240 byte records (tar's default blocking factor of 20), but the files then
 arrive with the right sizes and corrupted contents. 512 byte records are
 reliable, which is why they are the default here.
+
+run.sh calls this with --if-needed, which rebuilds the tape only when one of
+the files that belongs on it has changed. The lists below are the only place
+that decides what does belong on it.
 """
 
 import argparse
@@ -30,11 +34,13 @@ import sys
 import tarfile
 
 # Never worth shipping to the PDP-11: version control, editor state, the
-# generated data directory (build.csh regenerates it) and earlier tape images.
-SKIP_NAMES = ('.git', '.vscode', 'data', '__pycache__')
+# generated data directory (build.csh regenerates it), earlier tape images, and
+# this directory, which is only of use on the machine running the simulator.
+SKIP_NAMES = ('.git', '.vscode', 'data', '__pycache__', 'simh')
 SKIP_SUFFIXES = ('.tap', '.tar', '.o', '.dsk', '.xz', '.gz')
-# Binaries built on the host; the PDP-11 builds its own.
-SKIP_PATHS = ('r136', 'tools/gendata')
+# Binaries built on the host, since the PDP-11 builds its own, and the top level
+# README, which is about getting to the PDP-11 rather than anything done on it.
+SKIP_PATHS = ('r136', 'tools/gendata', 'README.md')
 
 
 def should_skip(relative_path, is_dir):
@@ -74,7 +80,17 @@ def collect(source_dir):
     return collected
 
 
-def build_tar(source_dir, member_dir):
+def newest(files, than):
+    """Returns the relative path of the most recently changed file that is newer
+    than the given timestamp, or None if none of them are."""
+    newer = [(os.path.getmtime(full_path), relative_path)
+             for full_path, relative_path in files
+             if os.path.getmtime(full_path) > than]
+
+    return max(newer)[1] if newer else None
+
+
+def build_tar(files, member_dir):
     """Builds a tar archive in memory, with every path under member_dir."""
     buffer = io.BytesIO()
 
@@ -82,7 +98,7 @@ def build_tar(source_dir, member_dir):
     # fields, and every path in R136 is far shorter than the 100
     # character limit that old tar imposes.
     with tarfile.open(fileobj=buffer, mode='w', format=tarfile.USTAR_FORMAT) as archive:
-        for full_path, relative_path in collect(source_dir):
+        for full_path, relative_path in files:
             info = archive.gettarinfo(full_path, arcname='%s/%s' % (member_dir, relative_path))
             # 2.11BSD has no idea who we are, so don't confuse it.
             info.uid = info.gid = 0
@@ -139,12 +155,29 @@ def main():
     parser.add_argument('-r', '--record-size', type=int, default=512,
                         help='tape record size in bytes (default: 512, and see the '
                              'note at the top of this script before raising it)')
+    parser.add_argument('-n', '--if-needed', action='store_true',
+                        help='do nothing unless a file that belongs on the tape is '
+                             'newer than the tape image, and say which one it was')
     arguments = parser.parse_args()
 
     if not os.path.isdir(arguments.source):
         sys.exit('%s is not a directory' % arguments.source)
 
-    data = build_tar(arguments.source, arguments.dir_name)
+    files = collect(arguments.source)
+
+    if arguments.if_needed:
+        if not os.path.exists(arguments.output):
+            reason = "it doesn't exist yet"
+        else:
+            reason = newest(files, os.path.getmtime(arguments.output))
+            if reason is None:
+                print('%s is up to date.' % arguments.output)
+                return
+            reason = '%s is newer' % reason
+
+        print('Building %s, because %s' % (arguments.output, reason))
+
+    data = build_tar(files, arguments.dir_name)
     tape = wrap_in_tape(data, arguments.record_size)
 
     with open(arguments.output, 'wb') as handle:

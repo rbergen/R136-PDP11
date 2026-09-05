@@ -2,7 +2,6 @@
 # those scripts, not run on its own.
 
 simh_directory=$(cd "$(dirname "$0")" && pwd)
-project_directory=$(cd "$simh_directory/.." && pwd)
 
 disk_image="$simh_directory/2.11BSD_rq.dsk"
 tape_image="$simh_directory/r136.tap"

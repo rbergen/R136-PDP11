@@ -29,33 +29,20 @@ if simulator_is_running; then
     exit 1
 fi
 
-# Work out whether the tape still reflects the sources. Everything git ignores
-# is skipped, or the tape would always look out of date compared to itself.
-if [ ! -f "$tape_image" ]; then
-    tape_reason="it doesn't exist yet"
+# Bring the tape up to date. mktape.py already knows exactly which files belong
+# on it, so it decides whether the one we have is still current: keeping a
+# second copy of that list here is how the two would quietly drift apart.
+if have_python; then
+    "$tape_builder" --if-needed -o "$tape_image" || exit 1
+    echo
+elif [ ! -f "$tape_image" ]; then
+    echo "There is no tape image yet, and python3 isn't installed to build one." >&2
+    echo "Run ./setup.sh, which checks for it." >&2
+    exit 1
 else
-    changed=$(find "$project_directory" \
-                   \( -name .git -o -name data -o -name __pycache__ \
-                      -o -name '*.tap' -o -name '*.tar' -o -name '*.o' \
-                      -o -name '*.dsk' -o -name '*.xz' -o -name '*.gz' \) -prune \
-                   -o -type f -newer "$tape_image" -print 2>/dev/null | head -1)
-
-    if [ -n "$changed" ]; then
-        tape_reason="$(basename "$changed") is newer"
-    else
-        tape_reason=""
-    fi
-fi
-
-if [ -n "$tape_reason" ]; then
-    if have_python; then
-        echo "*** Building the tape image, because $tape_reason"
-        "$tape_builder" -o "$tape_image"
-        echo
-    else
-        echo "The tape image needs rebuilding, but python3 isn't installed." >&2
-        exit 1
-    fi
+    echo "python3 isn't installed, so I can't tell whether the tape image is" >&2
+    echo "still current. Carrying on with the one that is already there." >&2
+    echo >&2
 fi
 
 cat <<'EOF'
