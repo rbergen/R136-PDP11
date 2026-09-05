@@ -353,8 +353,7 @@ Progdata *progdata;
 {
     char *texts[SWORD_TEXT_COUNT];
     int beast = HELLEHOND;
-
-    LoadStrings(texts, SWORD_TEXT_COUNT, 'c', ZWAARD, TRUE);
+    int i;
 
     if (progdata->living[beast].room != progdata->status.curroom || !progdata->living[beast].strike)
     {
@@ -365,6 +364,10 @@ Progdata *progdata;
             return;
         }
     }
+
+    /* LoadStrings heap-allocates the strings it loads, so they are freed below */
+    LoadStrings(texts, SWORD_TEXT_COUNT, 'c', ZWAARD, TRUE);
+
     while (TRUE)
     {
         if (rnd(100) > 70)
@@ -377,10 +380,10 @@ Progdata *progdata;
 
         if (progdata->living[beast].strike == 1)
             cputs(texts[BEAST_SEVERELY_WOUNDED]);
-        
+
         if (!progdata->living[beast].strike || rnd(100) > 30)
             break;
-        
+
         cputs(texts[WANT_TO_STRIKE_AGAIN]);
         if (!IsConfirmed(progdata))
         {
@@ -398,6 +401,9 @@ Progdata *progdata;
     }
 
     getch();
+
+    for (i = 0; i < SWORD_TEXT_COUNT; i++)
+        free(texts[i]);
 }
 
 void UseItemToStatus(progdata, item, ownedindex, beast, status)
@@ -450,12 +456,12 @@ Parsedata *parsedata;
 {
     if (progdata->owneditems[parsedata->object1] == ZAKLAMP)
     {
-        cputs(GetSingleLineText('c', ZAKLAMP, NEED_LAMP));
+        cputs(GetSingleLineText('c', ZAKLAMP, NEED_LAMP, TRUE));
         return;
     }
     if (progdata->owneditems[parsedata->object1] == BATTERIJEN)
     {
-        cputs(GetSingleLineText('c', BATTERIJEN, NEED_BATTERIES));
+        cputs(GetSingleLineText('c', BATTERIJEN, NEED_BATTERIES, TRUE));
         return;
     }
     wprintw(mainscr, GetSingleLineText('c', COMMAND_LINE_TEXTS, YOU_PUT_DOWN, TRUE), progdata->items[progdata->owneditems[parsedata->object1]].name);
@@ -608,9 +614,9 @@ Progdata *progdata;
 char *inpstr;
 Parsedata *parsedata;
 {
-    char *eoword, *curp;
+    char *eoword, *curp, *separator;
     char workstr[65], itemname[25];
-    int i;
+    int i, namelength;
 
     parsedata->error = FALSE;
 
@@ -650,23 +656,38 @@ Parsedata *parsedata;
         break;
 
     case COMBINEER:
-        if (*eoword != ' ' || (!strstr(curp, AND) && !strstr(curp, WITH)))
+        /* AND and WITH are indexes into the preloaded strings, so they have to
+           go through Str() before they can be searched for. */
+        if (*eoword != ' ' || (!strstr(curp, Str(AND)) && !strstr(curp, Str(WITH))))
             PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, COMBINEER_SYNTAX, FALSE));
 
         curp = eoword + 1;
-        if ((eoword = strstr(curp, AND)) == NULL)
-            eoword = strstr(curp, WITH);
+        separator = Str(AND);
+        if ((eoword = strstr(curp, separator)) == NULL)
+        {
+            separator = Str(WITH);
+            eoword = strstr(curp, separator);
+        }
 
-        strncpy(itemname, curp, ((eoword - curp) < 25 ? (int)(eoword - curp) : 24));
-        itemname[((eoword - curp) < 25 ? (int)(eoword - curp) : 24)] = 0;
+        if (eoword == NULL || eoword == curp)
+            PARSE_ERROR_RETURN(GetSingleLineText('c', PARSE_ERROR_TEXTS, COMBINEER_SYNTAX, FALSE));
 
-        RETURN_IF_NOT_FOUND(parsedata->object1, itemname);
+        namelength = (int)(eoword - curp);
+        if (namelength > 24)
+            namelength = 24;
+        strncpy(itemname, curp, namelength);
+        itemname[namelength] = 0;
 
-        curp = eoword + strlen(strstr(curp, AND) == curp ? AND : WITH);
-        strncpy(itemname, curp, (strlen(curp) < 25 ? strlen(curp) : 24));
-        itemname[(strlen(curp) < 25 ? strlen(curp) : 24)] = 0;
+        RETURN_IF_NOT_FOUND(&(parsedata->object1), itemname);
 
-        RETURN_IF_NOT_FOUND(parsedata->object2, itemname);
+        curp = eoword + strlen(separator);
+        namelength = (int)strlen(curp);
+        if (namelength > 24)
+            namelength = 24;
+        strncpy(itemname, curp, namelength);
+        itemname[namelength] = 0;
+
+        RETURN_IF_NOT_FOUND(&(parsedata->object2), itemname);
 
         if (parsedata->object1 == parsedata->object2)
             ProcessParseError(parsedata, GetSingleLineText('c', PARSE_ERROR_TEXTS, CANT_COMBINE_WITH_SELF, FALSE));
@@ -681,7 +702,7 @@ Parsedata *parsedata;
         if (parsedata->object1 < 0)
         {
             ShowInputError(GetSingleLineText('c', PARSE_ERROR_TEXTS, parsedata->object1 == NO_ITEM
-                ? ITEM_NOT_HERE : AMBIGUOUS_ABBREVIATION), eoword + 1);
+                ? ITEM_NOT_HERE : AMBIGUOUS_ABBREVIATION, FALSE), eoword + 1);
             parsedata->error = TRUE;
         }
         break;

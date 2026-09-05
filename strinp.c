@@ -135,6 +135,9 @@ va_dcl
     int toret;
 
     inpstr = (char *) calloc(length + 1, sizeof(char));
+    if (inpstr == NULL)
+        return EOF;
+
     do 
     {
         memset(inpstr, ' ', length);

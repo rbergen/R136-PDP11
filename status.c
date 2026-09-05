@@ -54,7 +54,7 @@ Progdata *progdata;
         ShowItems(progdata);
     }
 
-    ShowDirString( );
+    ShowDirString(progdata);
     cputs("\n");
 }
 

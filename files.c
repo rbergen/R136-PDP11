@@ -38,14 +38,19 @@ char *str, find, replace;
 FILE *OpenDataFile(letter, number)
 char letter, number;
 {
-    char composed_path[12];
+    char composed_path[64];
+    char message[96];
     FILE *fp;
 
     sprintf(composed_path, "data/%s/%c%d", language, letter, number);
 
     fp = fopen(composed_path, "r");
     if (fp == NULL)
-        wprintw(mainscr, "Error opening file %s!\n", composed_path);
+    {
+        /* Careful: this can happen before mainscr exists, so don't use cputs(). */
+        sprintf(message, "Error opening file %s!\n", composed_path);
+        PrintError(message);
+    }
 
     return fp;
 }
@@ -93,18 +98,37 @@ char *GetSingleLineText(letter, number, line, add_newlines)
 char letter, number, line;
 bool add_newlines;
 {
-    int i;
+    int i, length;
     FILE *fp;
+    char *result = NULL;
+
+    /* Never hand a NULL back: every caller feeds this straight to cputs(). */
+    single_line_text[0] = 0;
 
     fp = OpenDataFile(letter, number);
     if (fp == NULL)
-        return NULL;
+        return single_line_text;
 
-    for (i = 0; i <= line && fgets(single_line_text, SINGLE_LINE_LENGTH, fp); i++);
+    for (i = 0; i <= line; i++)
+    {
+        result = fgets(single_line_text, SINGLE_LINE_LENGTH, fp);
+        if (result == NULL)
+            break;
+    }
 
     fclose(fp);
 
-    single_line_text[strlen(single_line_text) - 1] = 0;
+    if (result == NULL)
+    {
+        single_line_text[0] = 0;
+        return single_line_text;
+    }
+
+    /* Only strip an actual newline: the last line of a file may not have one */
+    length = (int)strlen(single_line_text);
+    if (length > 0 && single_line_text[length - 1] == '\n')
+        single_line_text[length - 1] = 0;
+
     fuzzle(single_line_text);
 
     return add_newlines ? put_newlines(single_line_text) : single_line_text;
@@ -120,7 +144,13 @@ char number, **name, **description;
     filenumber = number / 20;    /* We keep info for 20 rooms in each file */
     number %= 20;
 
+    room_text[0] = 0;
+    *name = room_text;
+    *description = NULL;
+
     fp = OpenDataFile('r', filenumber);
+    if (fp == NULL)
+        return;
 
     for (i = 0; i <= number && fgets(room_text, ROOM_TEXT_LENGTH, fp); i++);
 
@@ -128,14 +158,9 @@ char number, **name, **description;
 
     fuzzle(room_text);
 
-    *name = room_text;
-
     semicolon = strchr(room_text, ';');
     if (semicolon == NULL)
-    {
-        *description = NULL;
         return;
-    }
 
     *description = semicolon + 1;
     *semicolon = 0;
@@ -153,27 +178,49 @@ bool add_newlines;
     FILE *fp;
     char line[100];
 
-    fp = OpenDataFile(letter, number);
-    if (fp == NULL) 
-        return;
+    for (i = 0; i < count; i++)
+        string_array[i] = NULL;
 
-    for (i = 0; i < count && fgets(line, 100, fp); i++)
+    fp = OpenDataFile(letter, number);
+    if (fp == NULL)
+        lines_read = 0;
+    else
     {
-        string_length = strlen(line);
-        string_array[i] = (char *)malloc(string_length);
-        /* We don't want the newline at the end of the string */
-        memcpy(string_array[i], line, string_length - 1);
-        string_array[i][string_length - 1] = 0;
-        fuzzle(string_array[i]);
+        for (i = 0; i < count && fgets(line, 100, fp); i++)
+        {
+            string_length = (int)strlen(line);
+
+            /* We don't want the newline at the end of the string, but the last
+               line of a file doesn't necessarily have one. */
+            if (string_length > 0 && line[string_length - 1] == '\n')
+                string_length--;
+
+            string_array[i] = (char *)malloc(string_length + 1);
+            if (string_array[i] == NULL)
+                break;
+
+            memcpy(string_array[i], line, string_length);
+            string_array[i][string_length] = 0;
+            fuzzle(string_array[i]);
+        }
+
+        lines_read = i;
+
+        if (add_newlines)
+            for (i = 0; i < lines_read; i++)
+                put_newlines(string_array[i]);
+
+        fclose(fp);
     }
 
-    lines_read = i;
-
-    if (add_newlines) 
-        for (i = 0; i < count; i++)
-            put_newlines(string_array[i]);
-
-    fclose(fp);
+    /* Anything we couldn't read becomes an empty string, so that printing it
+       is harmless and freeing it is still valid. */
+    for (i = lines_read; i < count; i++)
+    {
+        string_array[i] = (char *)malloc(1);
+        if (string_array[i] != NULL)
+            string_array[i][0] = 0;
+    }
 
     return lines_read;
 }

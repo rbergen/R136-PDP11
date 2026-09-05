@@ -96,6 +96,11 @@ int strinp();
 void ApplySimmeringForest();
 bool IsRoomDark();
 
+/* init.c */
+bool Initialize();
+bool ResetGame();
+void Deinitialize();
+
 /* main.c */
 void ForceExit();
 
