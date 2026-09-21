@@ -1,5 +1,7 @@
 # R136 for 2.11BSD on the PDP-11
 
+[![Build on 2.11BSD](https://github.com/rbergen/R136-PDP11/actions/workflows/build.yml/badge.svg)](https://github.com/rbergen/R136-PDP11/actions/workflows/build.yml)
+
 ## Background
 
 As documented in the ["main" R136 repo](https://github.com/rbergen/R136), R136 is a text adventure game that was written for MS-DOS in the second half of the 1990s.

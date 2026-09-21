@@ -40,9 +40,9 @@ cd r136
 ./r136 -l en
 ```
 
-Compiling all nine source files takes roughly twenty to thirty minutes of emulated time, so put
-the kettle on. When you're finished, shut the machine down as described under
-[Shutting down](#shutting-down).
+The whole build, `gendata` and data files included, takes well under a minute: SIMH runs the
+11/70 a good deal faster than DEC ever did. When you're finished, shut the machine down as
+described under [Shutting down](#shutting-down).
 
 Everything below assumes you are logged in as `user`, whose shell is `tcsh`.
 
@@ -54,6 +54,7 @@ Everything below assumes you are logged in as `user`, whose shell is `tcsh`.
 | `run.sh` | Rebuilds the tape image when needed and starts the machine |
 | `r136.ini` | SIMH configuration: an 11/70, the system disk, and a tape drive |
 | `mktape.py` | Packs the game's sources into a tape image that 2.11BSD's `tar` can read, and decides when that is needed |
+| `autobuild.py` | Boots the machine, builds R136 on it with nobody at the console, and shuts it down again |
 | `common.sh` | Paths and helpers the two scripts share; not run on its own |
 
 The disk image and the tape image are both generated, and are ignored by git.
@@ -71,6 +72,10 @@ at **patch level 482**, which is about as modern as 2.11BSD gets. It is about 24
 and roughly 1 GB once unpacked, although most of that is empty space your filesystem will happily
 leave as a hole. If you already own a PiDP-11 you have this image already, in
 `/opt/pidp11/systems/211bsd/`, and can drop it in here instead.
+
+The download stays behind as `2.11BSD_rq.dsk.xz`. Should the unpacked image ever get damaged,
+delete it and run `setup.sh` again: it unpacks the download instead of fetching it a second time,
+and you are back to a pristine machine.
 
 ## Putting R136 on a tape
 
@@ -184,6 +189,23 @@ For reference, on patch level 482 the result is a comfortable fit in the PDP-11'
 text    data    bss     dec     hex
 35650   3068    3854    42572   a64c
 ```
+
+## Building without touching the console
+
+`autobuild.py` does the whole cycle by itself: it starts the machine through `run.sh`, logs in as
+`user`, unpacks the tape, runs `build.csh`, checks that both binaries, all the data files and the
+tarball came out of it, confirms `r136 -h` runs and lists both languages, and shuts the machine
+down properly. The console is streamed to your terminal as it goes, and to a file if you pass
+`--log`. It exits 0 if everything went well, and says what did not otherwise.
+
+```sh
+./autobuild.py
+```
+
+This is what [GitHub Actions](../.github/workflows/build.yml) runs on every push and pull
+request, on a Linux runner with SIMH from `apt-get`, so R136 is built on 2.11BSD, by pcc, every
+time. It is also the quickest way to find out whether a change still compiles: boot, build,
+checks and shutdown together take about a minute.
 
 ## Logging in
 

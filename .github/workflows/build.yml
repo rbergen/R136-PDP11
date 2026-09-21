@@ -1,0 +1,59 @@
+# Builds R136 the only way it can be built: on 2.11BSD, on a PDP-11. The PDP-11
+# is SIMH on an ordinary Linux runner, and everything it takes to get there is
+# the same setup.sh / run.sh pair that simh/README.md describes. The runner's
+# job is to boot the machine, hand it the sources on a tape, wait for pcc, and
+# read the console; simh/autobuild.py does all of that.
+#
+# It is quick: SIMH runs the 11/70 far faster than the real thing, and the
+# whole cycle from boot to halt takes about a minute. Installing SIMH and
+# unpacking the disk image take longer than the build does.
+
+name: Build on 2.11BSD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes the running build pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build under SIMH
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The disk image is a 24 MB download that unpacks to 1 GB. Caching the
+      # download is enough: setup.sh unpacks it again when the image is
+      # missing, and skips the download when it isn't. The key tracks the URL,
+      # which lives in common.sh.
+      - name: Restore the 2.11BSD disk image download
+        uses: actions/cache@v4
+        with:
+          path: simh/2.11BSD_rq.dsk.xz
+          key: 211bsd-disk-image-${{ hashFiles('simh/common.sh') }}
+
+      - name: Install the simulator and unpack the disk image
+        working-directory: simh
+        run: ./setup.sh
+
+      - name: Build R136 on the emulated PDP-11
+        working-directory: simh
+        run: ./autobuild.py --log "$RUNNER_TEMP/console.log"
+
+      # The raw console output, escape sequences and all, for when the
+      # cleaned-up version in the job log isn't enough.
+      - name: Keep the console log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-log
+          path: ${{ runner.temp }}/console.log
+          if-no-files-found: ignore

@@ -33,10 +33,10 @@ import struct
 import sys
 import tarfile
 
-# Never worth shipping to the PDP-11: version control, editor state, the
+# Never worth shipping to the PDP-11: version control and CI, editor state, the
 # generated data directory (build.csh regenerates it), earlier tape images, and
 # this directory, which is only of use on the machine running the simulator.
-SKIP_NAMES = ('.git', '.vscode', 'data', '__pycache__', 'simh')
+SKIP_NAMES = ('.git', '.github', '.vscode', 'data', '__pycache__', 'simh')
 SKIP_SUFFIXES = ('.tap', '.tar', '.o', '.dsk', '.xz', '.gz')
 # Binaries built on the host, since the PDP-11 builds its own, and the top level
 # README, which is about getting to the PDP-11 rather than anything done on it.
