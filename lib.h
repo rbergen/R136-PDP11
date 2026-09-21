@@ -13,6 +13,12 @@
 #define KEY_ESCAPE      -12
 #define KEY_UNHANDLED   -13
 
+/* The most a line in a text file may hold, newline included. files.c sizes
+   every line buffer by this, and gendata refuses to build the data files if a
+   text exceeds it, so a line that has grown too long stops the build instead
+   of being quietly cut short in the game. */
+#define TEXT_LINE_LENGTH    256
+
 int vsscanf();
 int getkeypress();
 void memshift();
