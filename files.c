@@ -8,16 +8,13 @@
 
 char *language = "nl";
 
-#define SINGLE_LINE_LENGTH  100
-#define ROOM_TEXT_LENGTH    200
-
 /* File numbers */
 
 #define ITEM_NAMES			0
 #define ITEM_DESCRIPTIONS	1
 
-static char single_line_text[SINGLE_LINE_LENGTH];
-static char room_text[ROOM_TEXT_LENGTH];
+static char single_line_text[TEXT_LINE_LENGTH];
+static char room_text[TEXT_LINE_LENGTH];
 
 char *replace_char(str, find, replace)
 char *str, find, replace;
@@ -59,7 +56,7 @@ void PrintLivingStatus(id, status)
 char id, status;
 {
     FILE *fp;
-    char line[100];
+    char line[TEXT_LINE_LENGTH];
     char *result;
     bool printed = FALSE;
 
@@ -69,7 +66,7 @@ char id, status;
 
     /* Skip lines until we find the file section for our status */
     do 
-        result = fgets(line, 100, fp);
+        result = fgets(line, TEXT_LINE_LENGTH, fp);
     while (result != NULL && (strlen(line) < 3 || (line[0] != 'K' || line[1] != 'J' || line[2] != 'n' - status)));
 
     /* This (EOF) can happen if the text file contains no text for our status */
@@ -80,7 +77,7 @@ char id, status;
     }
 
     /* Read and print the status text for our status, until we hit the next status marker */
-    while (fgets(line, 100, fp) && (strlen(line) < 2 || (line[0] != 'K' || line[1] != 'J'))) 
+    while (fgets(line, TEXT_LINE_LENGTH, fp) && (strlen(line) < 2 || (line[0] != 'K' || line[1] != 'J'))) 
     {
         fuzzle(line);
         cputs(line);
@@ -111,7 +108,7 @@ bool add_newlines;
 
     for (i = 0; i <= line; i++)
     {
-        result = fgets(single_line_text, SINGLE_LINE_LENGTH, fp);
+        result = fgets(single_line_text, TEXT_LINE_LENGTH, fp);
         if (result == NULL)
             break;
     }
@@ -152,7 +149,7 @@ char number, **name, **description;
     if (fp == NULL)
         return;
 
-    for (i = 0; i <= number && fgets(room_text, ROOM_TEXT_LENGTH, fp); i++);
+    for (i = 0; i <= number && fgets(room_text, TEXT_LINE_LENGTH, fp); i++);
 
     fclose(fp);
 
@@ -176,7 +173,7 @@ bool add_newlines;
 {
     int i, string_length, lines_read;
     FILE *fp;
-    char line[100];
+    char line[TEXT_LINE_LENGTH];
 
     for (i = 0; i < count; i++)
         string_array[i] = NULL;
@@ -186,7 +183,7 @@ bool add_newlines;
         lines_read = 0;
     else
     {
-        for (i = 0; i < count && fgets(line, 100, fp); i++)
+        for (i = 0; i < count && fgets(line, TEXT_LINE_LENGTH, fp); i++)
         {
             string_length = (int)strlen(line);
 
@@ -230,14 +227,14 @@ char letter, number;
 bool centered;
 {
     FILE *fp;
-    char line[100];
+    char line[TEXT_LINE_LENGTH];
     char *result;
 
     fp = OpenDataFile(letter, number);
     if (fp == NULL)
         return;
 
-    while (fgets(line, 100, fp))
+    while (fgets(line, TEXT_LINE_LENGTH, fp))
     {
         fuzzle(line);
         if (line[0] == 0); /* Ignore the last line without the newline*/

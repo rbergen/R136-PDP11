@@ -10,7 +10,8 @@ int fuzzle_file(source, target)
 char *source, *target;
 {
     FILE *source_fp, *target_fp;
-    char line[256];
+    char line[TEXT_LINE_LENGTH];
+    int line_number = 0;
 
     if (!(source_fp = fopen(source, "r"))) 
     {
@@ -25,8 +26,22 @@ char *source, *target;
         return 1;
     }
 
-    while (fgets(line, 256, source_fp))
+    while (fgets(line, TEXT_LINE_LENGTH, source_fp))
     {
+        line_number++;
+
+        /* A full buffer that doesn't end in a newline means fgets() stopped
+           short of the end of the line. The game reads with the same buffer
+           size, so it would stop short in the same place. */
+        if (strlen(line) == TEXT_LINE_LENGTH - 1 && line[TEXT_LINE_LENGTH - 2] != '\n')
+        {
+            fprintf(stderr, "! %s line %d is longer than %d characters\n",
+                    source, line_number, TEXT_LINE_LENGTH - 2);
+            fclose(source_fp);
+            fclose(target_fp);
+            return 1;
+        }
+
         fuzzle(line);
         fputs(line, target_fp);
     }

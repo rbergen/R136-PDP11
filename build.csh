@@ -8,7 +8,7 @@ echo
 echo "*** Removing and generating data files"
 echo
 rm -r data
-tools/gendata
+tools/gendata || exit 1
 
 echo
 echo "*** Creating tarball"
