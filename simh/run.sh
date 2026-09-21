@@ -49,15 +49,17 @@ cat <<'EOF'
 *** Starting 2.11BSD
 
     It counts down and boots by itself; press Enter to skip the wait. Log in
-    as "root", which has no password. To copy R136 onto the machine:
+    as "user", which has no password. To copy R136 onto the machine and build
+    it:
 
-        mkdir -p /usr/src/r136 && cd /usr/src/r136
-        dd if=/dev/rmt0 of=r136.tar bs=512
-        tar xf r136.tar && sync
-        cd r136 && ./build.csh
+        cd
+        tar xvf /dev/rmt0
+        cd r136
+        ./build.csh
 
-    When you are done, shut down with "sync; sync; halt" and only then quit the
-    simulator with Ctrl-E followed by q. Killing it costs you recent writes.
+    When you are done, log out with "exit", log in as "root", and shut down
+    with "sync; sync; halt". Only then quit the simulator, with Ctrl-E
+    followed by q. Killing it costs you recent writes.
 
 EOF
 

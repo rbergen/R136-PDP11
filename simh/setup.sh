@@ -59,15 +59,21 @@ echo "*** Checking for the 2.11BSD disk image"
 if [ -f "$disk_image" ]; then
     echo "    Found $disk_image"
 else
-    echo "    Downloading (about 24 MB, and roughly 1 GB once unpacked)"
+    if [ -f "$disk_image.xz" ]; then
+        echo "    Found the download, $disk_image.xz"
+    else
+        echo "    Downloading (about 24 MB, and roughly 1 GB once unpacked)"
 
-    # Download to a scratch name first, so an interrupted transfer never leaves
-    # something behind that looks like a complete image.
-    curl -L --fail -o "$disk_image.part" "$image_url"
-    mv "$disk_image.part" "$disk_image.xz"
+        # Download to a scratch name first, so an interrupted transfer never
+        # leaves something behind that looks like a complete download.
+        curl -L --fail -o "$disk_image.part" "$image_url"
+        mv "$disk_image.part" "$disk_image.xz"
+    fi
 
+    # The download stays: it is small, and a fresh image is then one "rm" of
+    # the unpacked one away, with no network involved. CI relies on that too.
     echo "    Decompressing"
-    unxz "$disk_image.xz"
+    unxz -k "$disk_image.xz"
     echo "    Wrote $disk_image"
 fi
 
