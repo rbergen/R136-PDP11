@@ -28,14 +28,14 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The disk image is a 24 MB download that unpacks to 1 GB. Caching the
       # download is enough: setup.sh unpacks it again when the image is
       # missing, and skips the download when it isn't. The key tracks the URL,
       # which lives in common.sh.
       - name: Restore the 2.11BSD disk image download
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: simh/2.11BSD_rq.dsk.xz
           key: 211bsd-disk-image-${{ hashFiles('simh/common.sh') }}
@@ -52,7 +52,7 @@ jobs:
       # cleaned-up version in the job log isn't enough.
       - name: Keep the console log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: console-log
           path: ${{ runner.temp }}/console.log
